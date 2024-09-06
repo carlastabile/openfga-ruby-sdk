@@ -1,3 +1,5 @@
+# THIS PROJECT IS CURRENTLY A WIP!
+
 # ruby SDK for OpenFGA
 
 [![Release](https://img.shields.io/github/v/release/openfga/ruby-sdk?sort=semver&color=green)](https://github.com/openfga/ruby-sdk/releases)
