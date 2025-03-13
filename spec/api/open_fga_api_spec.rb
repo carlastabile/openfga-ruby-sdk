@@ -83,6 +83,7 @@ describe 'OpenFgaApi' do
         response = @api_instance.create_store(body)
 
         expect(response).to be_instance_of(OpenFga::CreateStoreResponse)
+        expect(response.id).to eq('JHGFD')
       end
 
       it 'raises an error for invalid store creation request' do
@@ -118,10 +119,12 @@ describe 'OpenFgaApi' do
     end
 
     it "should raise an error " do
-      stub_request_with_response(method: :delete,
+      stub_request_with_response(method: :get,
                                  path: "http://api.example.dev/stores/JHGFD",
-                                 status: 400)
-      expect { @api_instance.delete_store('JHGFD') }.to raise_error(OpenFga::ApiError)
+                                 status: 400,
+                                 response_body: { code: "validation_error",
+                                                  message: "Generic validation error" })
+      expect { @api_instance.get_store('JHGFD') }.to raise_error(OpenFga::ApiError)
     end
   end
 
@@ -144,9 +147,29 @@ describe 'OpenFgaApi' do
   # @param store_id 
   # @param [Hash] opts the optional parameters
   # @return [GetStoreResponse]
-  describe 'get_store test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+  describe 'when getting a store' do
+    let(:store_attributes) { { id: 'JHGFD', name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
+
+    it 'should get a store successfully' do
+      stub_request_with_response(method: :get,
+                                 path: "http://api.example.dev/stores/JHGFD",
+                                 status: 200,
+                                 response_body: store_attributes)
+      response = @api_instance.get_store('JHGFD')
+      expect(response).to be_instance_of(OpenFga::GetStoreResponse)
+      expect(response.id).to eq('JHGFD')
+    end
+
+    it "should raise an error id no store_id is set" do
+      expect { @api_instance.get_store(nil) }.to raise_error(ArgumentError)
+    end
+
+    it "should raise an error " do
+      stub_request_with_response(method: :get,
+                                 path: "http://api.example.dev/stores/JHGFD",
+                                 status: 400,
+                                 response_body: store_attributes)
+      expect { @api_instance.get_store('JHGFD') }.to raise_error(OpenFga::ApiError)
     end
   end
 
