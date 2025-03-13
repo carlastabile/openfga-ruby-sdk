@@ -71,10 +71,7 @@ describe 'OpenFgaApi' do
     # @return [CreateStoreResponse]
     context 'when creating a store' do
       let(:store_attributes) { { id: 'JHGFD', name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
-      let(:expected_response_body) {  OpenFga::CreateStoreResponse.new(store_attributes) }
-      before do
 
-      end
       it 'creates a store successfully' do
         stub_request_with_response(method: :post,
                                    path: "http://api.example.dev/stores",
@@ -108,9 +105,23 @@ describe 'OpenFgaApi' do
   # @param store_id 
   # @param [Hash] opts the optional parameters
   # @return [nil]
-  describe 'delete_store test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+  describe 'when deleting a store' do
+    it 'should delete store successfully' do
+      stub_request_with_response(method: :delete,
+                                 path: "http://api.example.dev/stores/JHGFD",
+                                 status: 204)
+      expect(@api_instance.delete_store('JHGFD')).to be_nil
+    end
+
+    it "should raise an error id no store_id is set" do
+      expect { @api_instance.delete_store(nil) }.to raise_error(ArgumentError)
+    end
+
+    it "should raise an error " do
+      stub_request_with_response(method: :delete,
+                                 path: "http://api.example.dev/stores/JHGFD",
+                                 status: 400)
+      expect { @api_instance.delete_store('JHGFD') }.to raise_error(OpenFga::ApiError)
     end
   end
 

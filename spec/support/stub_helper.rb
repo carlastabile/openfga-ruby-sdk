@@ -1,9 +1,11 @@
 module StubHelper
 
-  def stub_request_with_response(method:, path:, status:, request_body:, response_body:)
+  def stub_request_with_response(method:, path:, status:, request_body: nil, response_body: "")
+    body = request_body.nil? ? "" : request_body.to_json
+
     stub_request(method, path).
       with(
-        body: request_body.to_json,
+        body: body,
         headers: {
           'Accept'=>'application/json',
           'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
