@@ -10,7 +10,7 @@ module StubHelper
           'Accept'=>'application/json',
           'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
           'Content-Type'=>'application/json',
-          'User-Agent'=>'openfga-sdk ruby/0.0.1'
+          'User-Agent'=>"openfga-sdk ruby/#{OpenFga::VERSION}"
         }).to_return(
             status: status,
             body: response_body.to_json,
