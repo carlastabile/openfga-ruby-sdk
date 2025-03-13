@@ -167,8 +167,7 @@ describe 'OpenFgaApi' do
     it "should raise an error " do
       stub_request_with_response(method: :get,
                                  path: "http://api.example.dev/stores/JHGFD",
-                                 status: 400,
-                                 response_body: store_attributes)
+                                 status: 400)
       expect { @api_instance.get_store('JHGFD') }.to raise_error(OpenFga::ApiError)
     end
   end
@@ -180,9 +179,25 @@ describe 'OpenFgaApi' do
   # @param body 
   # @param [Hash] opts the optional parameters
   # @return [ListObjectsResponse]
-  describe 'list_objects test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+  describe 'when listing stores' do
+    let(:store_attributes) { { id: 'JHGFD', name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
+
+    it 'should list stores successfully' do
+      stub_request_with_response(method: :get,
+                                 path: "http://api.example.dev/stores",
+                                 status: 200,
+                                 response_body: { stores: [store_attributes],
+                                                  continuation_token: "eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ"})
+      response = @api_instance.list_stores
+      expect(response).to be_instance_of(OpenFga::ListStoresResponse)
+      expect(response.stores[0].id).to eq('JHGFD')
+    end
+
+    it "should raise an error " do
+      stub_request_with_response(method: :get,
+                                 path: "http://api.example.dev/stores",
+                                 status: 400)
+      expect { @api_instance.list_stores }.to raise_error(OpenFga::ApiError)
     end
   end
 
