@@ -164,6 +164,10 @@ describe 'OpenFgaApi' do
 
   describe "Authorization Models" do
     context "when writing an authorization model" do
+      let(:store_id){ "KJHGFDSUYTREW543GF" }
+      let(:valid_body){ authorization_model_payload }
+      let(:invalid_body){ {type_definitions: [] }}
+
       # unit tests for write_authorization_model
       # Create a new authorization model
       # The WriteAuthorizationModel API will add a new authorization model to a store. Each item in the &#x60;type_definitions&#x60; array is a type definition as specified in the field &#x60;type_definition&#x60;. The response will return the authorization model&#39;s ID in the &#x60;id&#x60; field.  ## Example To add an authorization model with &#x60;user&#x60; and &#x60;document&#x60; type definitions, call POST authorization-models API with the body:  &#x60;&#x60;&#x60;json {   \&quot;type_definitions\&quot;:[     {       \&quot;type\&quot;:\&quot;user\&quot;     },     {       \&quot;type\&quot;:\&quot;document\&quot;,       \&quot;relations\&quot;:{         \&quot;reader\&quot;:{           \&quot;union\&quot;:{             \&quot;child\&quot;:[               {                 \&quot;this\&quot;:{}               },               {                 \&quot;computedUserset\&quot;:{                   \&quot;object\&quot;:\&quot;\&quot;,                   \&quot;relation\&quot;:\&quot;writer\&quot;                 }               }             ]           }         },         \&quot;writer\&quot;:{           \&quot;this\&quot;:{}         }       }     }   ] } &#x60;&#x60;&#x60; OpenFGA&#39;s response will include the version id for this authorization model, which will look like  &#x60;&#x60;&#x60; {\&quot;authorization_model_id\&quot;: \&quot;01G50QVV17PECNVAHX1GG4Y5NC\&quot;} &#x60;&#x60;&#x60;
@@ -171,10 +175,47 @@ describe 'OpenFgaApi' do
       # @param body
       # @param [Hash] opts the optional parameters
       # @return [WriteAuthorizationModelResponse]
-      describe 'write_authorization_model test' do
-        it 'should work' do
-          # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-        end
+      it 'creates an authorization model successfully' do
+        stub_request_with_response(method: :post,
+                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   status: 201,
+                                   request_body: valid_body,
+                                   response_body: { authorization_model_id: "01G50QVV17PECNVAHX1GG4Y5NC" })
+
+        response = @api_instance.write_authorization_model(store_id, valid_body)
+        expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
+        expect(response.authorization_model_id).not_to be_nil
+      end
+
+      it 'raises an error for invalid authorization model request' do
+        stub_request_with_response(method: :post,
+                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   status: 400,
+                                   request_body: invalid_body,
+                                   response_body: {
+                                     "code": "validation_error",
+                                     "message": "Generic validation error"
+                                   })
+
+        expect { @api_instance.write_authorization_model(store_id, invalid_body) }
+          .to(raise_error do |error|
+            expect(error).to be_a(OpenFga::ApiError)
+            expect(error.message).to eq "Error message: the server returns an error\nHTTP status code: 400\nResponse headers: {\"content-type\" => \"application/json\"}\nResponse body: {\"code\":\"validation_error\",\"message\":\"Generic validation error\"}"
+          end)
+      end
+
+      it 'raises an error if store_id is missing' do
+        stub_request_with_response(method: :post,
+                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   status: 400)
+        expect { @api_instance.write_authorization_model(nil, valid_body) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if body is missing' do
+        stub_request_with_response(method: :post,
+                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   status: 400)
+        expect { @api_instance.write_authorization_model(store_id, nil) }.to raise_error(ArgumentError)
       end
     end
 
