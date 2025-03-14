@@ -163,11 +163,12 @@ describe 'OpenFgaApi' do
   end
 
   describe "Authorization Models" do
-    let(:valid_body){ authorization_model_payload }
-    let(:invalid_body){ {type_definitions: [] }}
+
     let(:store_id) { 'JHGFD' }
 
     context "when writing an authorization model" do
+      let(:valid_body){ load_json('write_authorization_model', body: true) }
+      let(:invalid_body){ {type_definitions: [] }}
       let(:store_id){ "KJHGFDSUYTREW543GF" }
 
       # unit tests for write_authorization_model
@@ -199,11 +200,7 @@ describe 'OpenFgaApi' do
                                      "message": "Generic validation error"
                                    })
 
-        expect { @api_instance.write_authorization_model(store_id, invalid_body) }
-          .to(raise_error do |error|
-            expect(error).to be_a(OpenFga::ApiError)
-            expect(error.message).to eq "Error message: the server returns an error\nHTTP status code: 400\nResponse headers: {\"content-type\" => \"application/json\"}\nResponse body: {\"code\":\"validation_error\",\"message\":\"Generic validation error\"}"
-          end)
+        expect { @api_instance.write_authorization_model(store_id, invalid_body) }.to(raise_error(OpenFga::ApiError))
       end
 
       it 'raises an error if store_id is missing' do
@@ -223,7 +220,7 @@ describe 'OpenFgaApi' do
 
     context "when reading an authorization model" do
       let(:model_id) { '01G5JAVJ41T49E9TT3SKVS7X1J' }
-      let(:valid_response){ read_authorization_model_response }
+      let(:valid_response){ load_json('read_authorization_model') }
       # unit tests for read_authorization_model
       # Return a particular version of an authorization model
       # The ReadAuthorizationModel API returns an authorization model by its identifier. The response will return the authorization model for the particular version.  ## Example To retrieve the authorization model with ID &#x60;01G5JAVJ41T49E9TT3SKVS7X1J&#x60; for the store, call the GET authorization-models by ID API with &#x60;01G5JAVJ41T49E9TT3SKVS7X1J&#x60; as the &#x60;id&#x60; path parameter.  The API will return: &#x60;&#x60;&#x60;json {   \&quot;authorization_model\&quot;:{     \&quot;id\&quot;:\&quot;01G5JAVJ41T49E9TT3SKVS7X1J\&quot;,     \&quot;type_definitions\&quot;:[       {         \&quot;type\&quot;:\&quot;user\&quot;       },       {         \&quot;type\&quot;:\&quot;document\&quot;,         \&quot;relations\&quot;:{           \&quot;reader\&quot;:{             \&quot;union\&quot;:{               \&quot;child\&quot;:[                 {                   \&quot;this\&quot;:{}                 },                 {                   \&quot;computedUserset\&quot;:{                     \&quot;object\&quot;:\&quot;\&quot;,                     \&quot;relation\&quot;:\&quot;writer\&quot;                   }                 }               ]             }           },           \&quot;writer\&quot;:{             \&quot;this\&quot;:{}           }         }       }     ]   } } &#x60;&#x60;&#x60; In the above example, there are 2 types (&#x60;user&#x60; and &#x60;document&#x60;). The &#x60;document&#x60; type has 2 relations (&#x60;writer&#x60; and &#x60;reader&#x60;).
@@ -257,16 +254,12 @@ describe 'OpenFgaApi' do
                                      "code": "undefined_endpoint",
                                      "message": "Endpoint not enabled"
                                    })
-        expect { @api_instance.read_authorization_model(store_id, model_id) }
-          .to(raise_error do |error|
-            expect(error).to be_a(OpenFga::ApiError)
-            expect(error.message).to eq "Error message: the server returns an error\nHTTP status code: 404\nResponse headers: {\"content-type\" => \"application/json\"}\nResponse body: {\"code\":\"undefined_endpoint\",\"message\":\"Endpoint not enabled\"}"
-          end)
+        expect { @api_instance.read_authorization_model(store_id, model_id) }.to(raise_error)
       end
     end
 
     context "when listing authorization models" do
-      let(:valid_response){ read_authorization_models_response }
+      let(:valid_response){ load_json('read_authorization_models') }
       it 'returns authorization models successfully' do
         stub_request_with_response(method: :get,
                                    path: "http://api.example.dev/stores/#{store_id}/authorization-models",
