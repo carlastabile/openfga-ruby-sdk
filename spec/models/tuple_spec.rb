@@ -23,7 +23,7 @@ describe OpenFga::Tuple do
   describe 'test an instance of Tuple' do
     it 'should create an instance of Tuple' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Tuple)
+      # expect(instance).to be_instance_of(OpenFga::Tuple)
     end
   end
 

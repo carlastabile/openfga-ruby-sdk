@@ -23,7 +23,7 @@ describe OpenFga::BatchCheckSingleResult do
   describe 'test an instance of BatchCheckSingleResult' do
     it 'should create an instance of BatchCheckSingleResult' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::BatchCheckSingleResult)
+      # expect(instance).to be_instance_of(OpenFga::BatchCheckSingleResult)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::BatchCheckRequest do
   describe 'test an instance of BatchCheckRequest' do
     it 'should create an instance of BatchCheckRequest' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::BatchCheckRequest)
+      # expect(instance).to be_instance_of(OpenFga::BatchCheckRequest)
     end
   end
 

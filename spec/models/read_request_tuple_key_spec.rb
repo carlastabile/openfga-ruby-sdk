@@ -23,7 +23,7 @@ describe OpenFga::ReadRequestTupleKey do
   describe 'test an instance of ReadRequestTupleKey' do
     it 'should create an instance of ReadRequestTupleKey' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ReadRequestTupleKey)
+      # expect(instance).to be_instance_of(OpenFga::ReadRequestTupleKey)
     end
   end
 

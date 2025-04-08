@@ -23,7 +23,7 @@ describe OpenFga::TupleKeyWithoutCondition do
   describe 'test an instance of TupleKeyWithoutCondition' do
     it 'should create an instance of TupleKeyWithoutCondition' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::TupleKeyWithoutCondition)
+      # expect(instance).to be_instance_of(OpenFga::TupleKeyWithoutCondition)
     end
   end
 

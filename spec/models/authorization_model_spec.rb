@@ -23,7 +23,7 @@ describe OpenFga::AuthorizationModel do
   describe 'test an instance of AuthorizationModel' do
     it 'should create an instance of AuthorizationModel' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::AuthorizationModel)
+      # expect(instance).to be_instance_of(OpenFga::AuthorizationModel)
     end
   end
 

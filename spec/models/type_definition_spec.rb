@@ -23,7 +23,7 @@ describe OpenFga::TypeDefinition do
   describe 'test an instance of TypeDefinition' do
     it 'should create an instance of TypeDefinition' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::TypeDefinition)
+      # expect(instance).to be_instance_of(OpenFga::TypeDefinition)
     end
   end
 

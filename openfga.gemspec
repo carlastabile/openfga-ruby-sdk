@@ -26,7 +26,7 @@ Gem::Specification.new do |s|
   s.description = "A high performance and flexible authorization/permission engine built for developers and inspired by Google Zanzibar."
   s.license     = "Apache-2.0"
   s.required_ruby_version = ">=3.2"
-  s.metadata    = {}
+  s.metadata = {}
 
   s.add_runtime_dependency 'faraday', '>= 1.0.1', '< 3.0'
   s.add_runtime_dependency 'faraday-multipart'

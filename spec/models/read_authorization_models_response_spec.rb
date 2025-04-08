@@ -23,7 +23,7 @@ describe OpenFga::ReadAuthorizationModelsResponse do
   describe 'test an instance of ReadAuthorizationModelsResponse' do
     it 'should create an instance of ReadAuthorizationModelsResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ReadAuthorizationModelsResponse)
+      # expect(instance).to be_instance_of(OpenFga::ReadAuthorizationModelsResponse)
     end
   end
 

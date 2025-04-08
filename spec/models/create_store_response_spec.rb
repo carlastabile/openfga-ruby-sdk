@@ -23,7 +23,7 @@ describe OpenFga::CreateStoreResponse do
   describe 'test an instance of CreateStoreResponse' do
     it 'should create an instance of CreateStoreResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::CreateStoreResponse)
+      # expect(instance).to be_instance_of(OpenFga::CreateStoreResponse)
     end
   end
 

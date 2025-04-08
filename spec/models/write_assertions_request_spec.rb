@@ -23,7 +23,7 @@ describe OpenFga::WriteAssertionsRequest do
   describe 'test an instance of WriteAssertionsRequest' do
     it 'should create an instance of WriteAssertionsRequest' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::WriteAssertionsRequest)
+      # expect(instance).to be_instance_of(OpenFga::WriteAssertionsRequest)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::ListObjectsResponse do
   describe 'test an instance of ListObjectsResponse' do
     it 'should create an instance of ListObjectsResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ListObjectsResponse)
+      # expect(instance).to be_instance_of(OpenFga::ListObjectsResponse)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::ReadResponse do
   describe 'test an instance of ReadResponse' do
     it 'should create an instance of ReadResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ReadResponse)
+      # expect(instance).to be_instance_of(OpenFga::ReadResponse)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::Users do
   describe 'test an instance of Users' do
     it 'should create an instance of Users' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Users)
+      # expect(instance).to be_instance_of(OpenFga::Users)
     end
   end
 

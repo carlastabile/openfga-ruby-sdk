@@ -23,7 +23,7 @@ describe OpenFga::Userset do
   describe 'test an instance of Userset' do
     it 'should create an instance of Userset' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Userset)
+      # expect(instance).to be_instance_of(OpenFga::Userset)
     end
   end
 

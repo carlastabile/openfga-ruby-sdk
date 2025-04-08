@@ -23,7 +23,7 @@ describe OpenFga::WriteAuthorizationModelResponse do
   describe 'test an instance of WriteAuthorizationModelResponse' do
     it 'should create an instance of WriteAuthorizationModelResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::WriteAuthorizationModelResponse)
+      # expect(instance).to be_instance_of(OpenFga::WriteAuthorizationModelResponse)
     end
   end
 

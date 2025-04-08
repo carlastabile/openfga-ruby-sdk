@@ -23,7 +23,7 @@ describe OpenFga::Node do
   describe 'test an instance of Node' do
     it 'should create an instance of Node' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Node)
+      # expect(instance).to be_instance_of(OpenFga::Node)
     end
   end
 
