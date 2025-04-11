@@ -23,7 +23,7 @@ describe OpenFga::ForbiddenResponse do
   describe 'test an instance of ForbiddenResponse' do
     it 'should create an instance of ForbiddenResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ForbiddenResponse)
+      # expect(instance).to be_instance_of(OpenFga::ForbiddenResponse)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::ObjectRelation do
   describe 'test an instance of ObjectRelation' do
     it 'should create an instance of ObjectRelation' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ObjectRelation)
+      # expect(instance).to be_instance_of(OpenFga::ObjectRelation)
     end
   end
 

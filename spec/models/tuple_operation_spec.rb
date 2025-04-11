@@ -23,7 +23,7 @@ describe OpenFga::TupleOperation do
   describe 'test an instance of TupleOperation' do
     it 'should create an instance of TupleOperation' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::TupleOperation)
+      # expect(instance).to be_instance_of(OpenFga::TupleOperation)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::ListUsersRequest do
   describe 'test an instance of ListUsersRequest' do
     it 'should create an instance of ListUsersRequest' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ListUsersRequest)
+      # expect(instance).to be_instance_of(OpenFga::ListUsersRequest)
     end
   end
 

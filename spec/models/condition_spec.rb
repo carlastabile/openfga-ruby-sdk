@@ -23,7 +23,7 @@ describe OpenFga::Condition do
   describe 'test an instance of Condition' do
     it 'should create an instance of Condition' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Condition)
+      # expect(instance).to be_instance_of(OpenFga::Condition)
     end
   end
 

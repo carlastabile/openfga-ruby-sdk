@@ -23,7 +23,7 @@ describe OpenFga::UsersetTree do
   describe 'test an instance of UsersetTree' do
     it 'should create an instance of UsersetTree' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::UsersetTree)
+      # expect(instance).to be_instance_of(OpenFga::UsersetTree)
     end
   end
 

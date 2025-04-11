@@ -23,7 +23,7 @@ describe OpenFga::ConditionMetadata do
   describe 'test an instance of ConditionMetadata' do
     it 'should create an instance of ConditionMetadata' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ConditionMetadata)
+      # expect(instance).to be_instance_of(OpenFga::ConditionMetadata)
     end
   end
 

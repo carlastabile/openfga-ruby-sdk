@@ -23,7 +23,7 @@ describe OpenFga::UnauthenticatedResponse do
   describe 'test an instance of UnauthenticatedResponse' do
     it 'should create an instance of UnauthenticatedResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::UnauthenticatedResponse)
+      # expect(instance).to be_instance_of(OpenFga::UnauthenticatedResponse)
     end
   end
 

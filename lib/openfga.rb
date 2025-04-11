@@ -16,6 +16,10 @@ require 'openfga/api_error'
 require 'openfga/version'
 require 'openfga/configuration'
 
+# Client
+require 'openfga/client/client_errors'
+require 'openfga/client/openfga_client'
+
 # Models
 require 'openfga/models/aborted_message_response'
 require 'openfga/models/any'

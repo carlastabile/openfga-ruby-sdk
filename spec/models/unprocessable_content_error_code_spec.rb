@@ -23,7 +23,7 @@ describe OpenFga::UnprocessableContentErrorCode do
   describe 'test an instance of UnprocessableContentErrorCode' do
     it 'should create an instance of UnprocessableContentErrorCode' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::UnprocessableContentErrorCode)
+      # expect(instance).to be_instance_of(OpenFga::UnprocessableContentErrorCode)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::InternalErrorMessageResponse do
   describe 'test an instance of InternalErrorMessageResponse' do
     it 'should create an instance of InternalErrorMessageResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::InternalErrorMessageResponse)
+      # expect(instance).to be_instance_of(OpenFga::InternalErrorMessageResponse)
     end
   end
 

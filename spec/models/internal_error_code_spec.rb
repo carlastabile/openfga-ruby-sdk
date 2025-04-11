@@ -23,7 +23,7 @@ describe OpenFga::InternalErrorCode do
   describe 'test an instance of InternalErrorCode' do
     it 'should create an instance of InternalErrorCode' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::InternalErrorCode)
+      # expect(instance).to be_instance_of(OpenFga::InternalErrorCode)
     end
   end
 

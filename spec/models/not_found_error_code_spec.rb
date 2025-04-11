@@ -23,7 +23,7 @@ describe OpenFga::NotFoundErrorCode do
   describe 'test an instance of NotFoundErrorCode' do
     it 'should create an instance of NotFoundErrorCode' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::NotFoundErrorCode)
+      # expect(instance).to be_instance_of(OpenFga::NotFoundErrorCode)
     end
   end
 

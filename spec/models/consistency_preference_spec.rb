@@ -23,7 +23,7 @@ describe OpenFga::ConsistencyPreference do
   describe 'test an instance of ConsistencyPreference' do
     it 'should create an instance of ConsistencyPreference' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ConsistencyPreference)
+      # expect(instance).to be_instance_of(OpenFga::ConsistencyPreference)
     end
   end
 

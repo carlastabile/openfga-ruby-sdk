@@ -23,7 +23,7 @@ describe OpenFga::Difference do
   describe 'test an instance of Difference' do
     it 'should create an instance of Difference' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Difference)
+      # expect(instance).to be_instance_of(OpenFga::Difference)
     end
   end
 

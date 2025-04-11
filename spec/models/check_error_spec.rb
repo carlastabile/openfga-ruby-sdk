@@ -23,7 +23,7 @@ describe OpenFga::CheckError do
   describe 'test an instance of CheckError' do
     it 'should create an instance of CheckError' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::CheckError)
+      # expect(instance).to be_instance_of(OpenFga::CheckError)
     end
   end
 

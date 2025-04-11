@@ -23,7 +23,7 @@ describe OpenFga::TupleToUserset do
   describe 'test an instance of TupleToUserset' do
     it 'should create an instance of TupleToUserset' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::TupleToUserset)
+      # expect(instance).to be_instance_of(OpenFga::TupleToUserset)
     end
   end
 

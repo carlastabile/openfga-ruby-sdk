@@ -23,7 +23,7 @@ describe OpenFga::Store do
   describe 'test an instance of Store' do
     it 'should create an instance of Store' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Store)
+      # expect(instance).to be_instance_of(OpenFga::Store)
     end
   end
 

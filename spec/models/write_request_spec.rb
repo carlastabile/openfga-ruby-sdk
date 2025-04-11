@@ -23,7 +23,7 @@ describe OpenFga::WriteRequest do
   describe 'test an instance of WriteRequest' do
     it 'should create an instance of WriteRequest' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::WriteRequest)
+      # expect(instance).to be_instance_of(OpenFga::WriteRequest)
     end
   end
 

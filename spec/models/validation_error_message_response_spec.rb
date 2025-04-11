@@ -23,7 +23,7 @@ describe OpenFga::ValidationErrorMessageResponse do
   describe 'test an instance of ValidationErrorMessageResponse' do
     it 'should create an instance of ValidationErrorMessageResponse' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ValidationErrorMessageResponse)
+      # expect(instance).to be_instance_of(OpenFga::ValidationErrorMessageResponse)
     end
   end
 

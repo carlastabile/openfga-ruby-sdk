@@ -23,7 +23,7 @@ describe OpenFga::Any do
   describe 'test an instance of Any' do
     it 'should create an instance of Any' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::Any)
+      # expect(instance).to be_instance_of(OpenFga::Any)
     end
   end
 

@@ -275,7 +275,5 @@ module OpenFga
         value
       end
     end
-
   end
-
 end

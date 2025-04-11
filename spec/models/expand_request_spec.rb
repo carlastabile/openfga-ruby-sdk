@@ -23,7 +23,7 @@ describe OpenFga::ExpandRequest do
   describe 'test an instance of ExpandRequest' do
     it 'should create an instance of ExpandRequest' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::ExpandRequest)
+      # expect(instance).to be_instance_of(OpenFga::ExpandRequest)
     end
   end
 

@@ -23,7 +23,7 @@ describe OpenFga::AuthErrorCode do
   describe 'test an instance of AuthErrorCode' do
     it 'should create an instance of AuthErrorCode' do
       # uncomment below to test the instance creation
-      #expect(instance).to be_instance_of(OpenFga::AuthErrorCode)
+      # expect(instance).to be_instance_of(OpenFga::AuthErrorCode)
     end
   end
 
