@@ -52,5 +52,17 @@ module OpenFga
     def list_stores(opts = {})
       @api_client.list_stores(opts)
     end
+
+    def write_authorization_model(store_id, body, opts = {})
+      @api_client.write_authorization_model(store_id, body, opts)
+    end
+
+    def read_authorization_model(store_id, id, opts = {})
+      @api_client.read_authorization_model(store_id, id, opts)
+    end
+
+    def read_authorization_models(store_id, opts = {})
+      @api_client.read_authorization_models(store_id, opts)
+    end
   end
 end
