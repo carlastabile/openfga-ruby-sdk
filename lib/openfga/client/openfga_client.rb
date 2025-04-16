@@ -65,7 +65,7 @@ module OpenFga
       @api_client.read_authorization_models(store_id, opts)
     end
 
-    def check(store_id, user, relation, object, contextual_tuples = nil, authorization_model_id = nil, opts = {})
+    def check(store_id, user, relation, object, contextual_tuples = nil, opts = {})
       fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
       fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
       fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
@@ -76,7 +76,16 @@ module OpenFga
       request_body = CheckRequest.new({ tuple_key: tuple_key })
 
       unless contextual_tuples.nil?
-        request_body.contextual_tuples = contextual_tuples
+        tuple_keys = contextual_tuples[:tuple_keys].map{ |tuple_key| TupleKey.new(tuple_key) }
+        request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys: tuple_keys)
+      end
+
+      if opts.include?(:authorization_model_id)
+        request_body.authorization_model_id = opts[:authorization_model_id]
+      end
+
+      if opts.include?(:context)
+        request_body.context = opts[:context]
       end
 
       @api_client.check(store_id, request_body, opts)

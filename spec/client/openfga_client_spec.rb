@@ -107,7 +107,7 @@ describe OpenFga::SdkClient do
                                      "code": "undefined_endpoint",
                                      "message": "Endpoint not enabled"
                                    })
-        expect { subject.read_authorization_model(store_id, model_id) }.to(raise_error)
+        expect { subject.read_authorization_model(store_id, model_id) }.to raise_error(OpenFga::ApiError)
       end
     end
 
@@ -160,6 +160,21 @@ describe OpenFga::SdkClient do
     # @return [CheckResponse]
     context 'when running a check request' do
       let(:store_id){ "KJHGFDSUYTREW543GF" }
+      let(:contextual_tuples) do 
+          { 
+            tuple_keys: [
+              {
+                user: "user:anne",
+                relation: "writer",
+                object: "document:2021-budget",
+                condition: {
+                  name: "condition1",
+                  context: {}
+                }
+              }
+            ]
+          }
+        end
 
       it 'should work for authorized tuple' do
         stub_request_with_response(method: :post,
@@ -225,32 +240,59 @@ describe OpenFga::SdkClient do
                                                        relation: "reader",
                                                        object: "document:2021-budget"
                                                      },
-                                                   contextual_tuples: {
-                                                      tuple_keys: [
-                                                        user: "user:anne",
-                                                        relation: "reader",
-                                                        object: "document:2021-budget",
-                                                        condition: {
-                                                          name: "condition1",
-                                                          context: {}
-                                                        }
-                                                      ]
-                                                   },
+                                                   contextual_tuples: contextual_tuples,
                                                    consistency: "UNSPECIFIED"
                                    },
                                    response_body: { allowed: true, resolution: "string" })
 
-        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget")
+        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget",
+                                 contextual_tuples)
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
-      xit "should work with different authorization_model_id" do
 
+      it "should work with different authorization_model_id" do
+        stub_request_with_response(method: :post,
+                                   path: "http://api.example.dev/stores/#{store_id}/check",
+                                   status: 200,
+                                   request_body: {
+                                     tuple_key: {
+                                       user: "user:anne",
+                                       relation: "reader",
+                                       object: "document:2021-budget"
+                                     },
+                                     authorization_model_id: "KJHGFDSUYTR",
+                                     consistency: "UNSPECIFIED"
+                                   },
+                                   response_body: { allowed: true, resolution: "string" })
+
+        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget",
+                                 nil, authorization_model_id: "KJHGFDSUYTR")
+        expect(response).to be_a(OpenFga::CheckResponse)
+        expect(response.allowed).to be true
       end
 
-      xit "should work with context" do
+      it "should work with context" do
+        stub_request_with_response(method: :post,
+                                   path: "http://api.example.dev/stores/#{store_id}/check",
+                                   status: 200,
+                                   request_body: {
+                                     tuple_key: {
+                                       user: "user:anne",
+                                       relation: "reader",
+                                       object: "document:2021-budget"
+                                     },
+                                     context: {},
+                                     consistency: "UNSPECIFIED"
+                                   },
+                                   response_body: { allowed: true, resolution: "string" })
 
+        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget",
+                                 nil, context: {})
+        expect(response).to be_a(OpenFga::CheckResponse)
+        expect(response.allowed).to be true
       end
+
     end
     # unit tests for expand
     # Expand all relationships in userset tree format, and following userset rewrite rules.  Useful to reason about and debug a certain relationship
