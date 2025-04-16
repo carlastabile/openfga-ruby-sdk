@@ -190,7 +190,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: "string" })
 
-        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget")
+        response = subject.check(store_id, "user:anne", :reader, "document:2021-budget")
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -209,17 +209,17 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: false, resolution: "string" })
 
-        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget")
+        response = subject.check(store_id, "user:anne", :reader, "document:2021-budget")
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be false
       end
 
       it "should raise an error if store_id is missing" do
-        expect { subject.check(nil, "user:anne", "reader", "roadmap") }.to raise_error(ArgumentError)
+        expect { subject.check(nil, "user:anne", :reader, "roadmap") }.to raise_error(ArgumentError)
       end
 
       it "should raise an error if user is missing" do
-        expect { subject.check(store_id, nil, "reader", "roadmap") }.to raise_error(ArgumentError)
+        expect { subject.check(store_id, nil, :reader, "roadmap") }.to raise_error(ArgumentError)
       end
 
       it "should raise an error if relation is missing" do
@@ -227,7 +227,7 @@ describe OpenFga::SdkClient do
       end
 
       it "should raise an error if object is missing" do
-        expect { subject.check(store_id, "user:anne", "reader", nil) }.to raise_error(ArgumentError)
+        expect { subject.check(store_id, "user:anne", :reader, nil) }.to raise_error(ArgumentError)
       end
 
       it "should work with contextual tuples" do
@@ -245,7 +245,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: "string" })
 
-        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget",
+        response = subject.check(store_id, "user:anne", :reader, "document:2021-budget",
                                  contextual_tuples)
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
@@ -266,7 +266,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: "string" })
 
-        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget",
+        response = subject.check(store_id, "user:anne", :reader, "document:2021-budget",
                                  nil, authorization_model_id: "KJHGFDSUYTR")
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
@@ -287,7 +287,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: "string" })
 
-        response = subject.check(store_id, "user:anne", "reader", "document:2021-budget",
+        response = subject.check(store_id, "user:anne", :reader, "document:2021-budget",
                                  nil, context: {})
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true

@@ -71,7 +71,7 @@ module OpenFga
       fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
 
       tuple_key = CheckRequestTupleKey.new({
-        user: user, relation: relation, object: object })
+        user:, relation: relation.to_s, object: })
 
       request_body = CheckRequest.new({ tuple_key: tuple_key })
 
