@@ -14,3 +14,5 @@ class ConfigurationNilError < ConfigurationError
     super "#{@property} must be specified"
   end 
 end
+
+class MissingStoreIdError < ConfigurationNilError; end

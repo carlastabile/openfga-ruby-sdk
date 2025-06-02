@@ -21,7 +21,7 @@ module OpenFga
     # @param [Hash] opts the optional parameters
     # @return [CreateStoreResponse]
     def create_store(name, opts = {})
-      body = OpenFga::CreateStoreRequest.new(name: name)
+      body = OpenFga::CreateStoreRequest.new(name:)
       @api_client.create_store(body, opts)
     end
 
@@ -73,12 +73,12 @@ module OpenFga
       tuple_key = CheckRequestTupleKey.new({
         user:, relation: relation.to_s, object: })
 
-      request_body = CheckRequest.new({ tuple_key: tuple_key })
+      request_body = CheckRequest.new({ tuple_key: })
 
       if opts.include?(:contextual_tuples)
         contextual_tuples = opts[:contextual_tuples]
-        tuple_keys = contextual_tuples[:tuple_keys].map{ |tuple_key| TupleKey.new(tuple_key) }
-        request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys: tuple_keys)
+        tuple_keys = contextual_tuples[:tuple_keys].map { |tuple_key| TupleKey.new(tuple_key) }
+        request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
       end
 
       if opts.include?(:authorization_model_id)
@@ -91,5 +91,30 @@ module OpenFga
 
       @api_client.check(store_id, request_body, opts)
     end
+
+    # Read changes
+    # Reads the list of historical relationship tuple writes and deletes.
+    # @param [Hash] body The request body
+    # @option body [String] :start_time The start time of the range to read changes from. This is a timestamp in ISO 8601 format.
+    # @option body [String] :type Get the list of tuple changes that affect only this type
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :page_size The number of pages to return in the request
+    # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results.
+    # @option opts [String] :store_id The store ID to read changes from
+    def read_changes(body = {}, opts = {})
+      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+
+      # the underlying client has an allowlist of parameters, so no need to
+      # strip out `store_id` from the body.
+      @api_client.read_changes(store_id(opts), opts.merge(body))
+    end
+
+    private
+
+      def store_id(opts = nil)
+        id = (opts || {})[:store_id] || @config[:store_id]
+        fail MissingStoreIdError unless id
+        id
+      end
   end
 end

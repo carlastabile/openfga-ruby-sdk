@@ -2,6 +2,17 @@ require 'spec_helper'
 
 describe OpenFga::SdkClient do
   let(:api_url) { 'http://localhost:8090' }
+  let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
+  let(:subject) { OpenFga::SdkClient.new(api_url:) }
+
+  def store_path(store_id)
+    "/stores/#{store_id}"
+  end
+
+  def stores_url(store_id = nil)
+    return "#{api_url}#{store_path(store_id)}" if store_id
+    "#{api_url}/stores"
+  end
 
   describe 'Configuration errors' do
     it 'checks for api_url' do
@@ -15,14 +26,10 @@ describe OpenFga::SdkClient do
     expect(OpenFga::SdkClient.new(api_url:)).not_to be_nil
   end
 
-  describe "Authorization Models" do
-    let(:subject) { OpenFga::SdkClient.new(api_url: "https://api.example.dev") }
-    let(:store_id) { 'JHGFD' }
-
-    context "when writing an authorization model" do
-      let(:valid_body){ load_json('write_authorization_model', body: true) }
-      let(:invalid_body){ {type_definitions: [] }}
-      let(:store_id){ "KJHGFDSUYTREW543GF" }
+  describe 'Authorization Models' do
+    context 'when writing an authorization model' do
+      let(:valid_body) { load_json('write_authorization_model', body: true) }
+      let(:invalid_body) { { type_definitions: [] } }
 
       # unit tests for write_authorization_model
       # Create a new authorization model
@@ -33,10 +40,10 @@ describe OpenFga::SdkClient do
       # @return [WriteAuthorizationModelResponse]
       it 'creates an authorization model successfully' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   path: "#{stores_url(store_id)}/authorization-models",
                                    status: 201,
                                    request_body: valid_body,
-                                   response_body: { authorization_model_id: "01G50QVV17PECNVAHX1GG4Y5NC" })
+                                   response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
 
         response = subject.write_authorization_model(store_id, valid_body)
         expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
@@ -45,12 +52,12 @@ describe OpenFga::SdkClient do
 
       it 'raises an error for invalid authorization model request' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400,
                                    request_body: invalid_body,
                                    response_body: {
-                                     "code": "validation_error",
-                                     "message": "Generic validation error"
+                                     code: 'validation_error',
+                                     message: 'Generic validation error'
                                    })
 
         expect { subject.write_authorization_model(store_id, invalid_body) }.to(raise_error(OpenFga::ApiError))
@@ -58,22 +65,22 @@ describe OpenFga::SdkClient do
 
       it 'raises an error if store_id is missing' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
         expect { subject.write_authorization_model(nil, valid_body) }.to raise_error(ArgumentError)
       end
 
       it 'raises an error if body is missing' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
         expect { subject.write_authorization_model(store_id, nil) }.to raise_error(ArgumentError)
       end
     end
 
-    context "when reading an authorization model" do
+    context 'when reading an authorization model' do
       let(:model_id) { '01G5JAVJ41T49E9TT3SKVS7X1J' }
-      let(:valid_response){ load_json('read_authorization_model') }
+      let(:valid_response) { load_json('read_authorization_model') }
       # unit tests for read_authorization_model
       # Return a particular version of an authorization model
       # The ReadAuthorizationModel API returns an authorization model by its identifier. The response will return the authorization model for the particular version.  ## Example To retrieve the authorization model with ID &#x60;01G5JAVJ41T49E9TT3SKVS7X1J&#x60; for the store, call the GET authorization-models by ID API with &#x60;01G5JAVJ41T49E9TT3SKVS7X1J&#x60; as the &#x60;id&#x60; path parameter.  The API will return: &#x60;&#x60;&#x60;json {   \&quot;authorization_model\&quot;:{     \&quot;id\&quot;:\&quot;01G5JAVJ41T49E9TT3SKVS7X1J\&quot;,     \&quot;type_definitions\&quot;:[       {         \&quot;type\&quot;:\&quot;user\&quot;       },       {         \&quot;type\&quot;:\&quot;document\&quot;,         \&quot;relations\&quot;:{           \&quot;reader\&quot;:{             \&quot;union\&quot;:{               \&quot;child\&quot;:[                 {                   \&quot;this\&quot;:{}                 },                 {                   \&quot;computedUserset\&quot;:{                     \&quot;object\&quot;:\&quot;\&quot;,                     \&quot;relation\&quot;:\&quot;writer\&quot;                   }                 }               ]             }           },           \&quot;writer\&quot;:{             \&quot;this\&quot;:{}           }         }       }     ]   } } &#x60;&#x60;&#x60; In the above example, there are 2 types (&#x60;user&#x60; and &#x60;document&#x60;). The &#x60;document&#x60; type has 2 relations (&#x60;writer&#x60; and &#x60;reader&#x60;).
@@ -83,9 +90,10 @@ describe OpenFga::SdkClient do
       # @return [ReadAuthorizationModelResponse]
       it 'returns the authorization model successfully' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models/#{model_id}",
+                                   path: "#{stores_url(store_id)}/authorization-models/#{model_id}",
                                    status: 200,
                                    response_body: valid_response)
+
         result = subject.read_authorization_model(store_id, model_id)
         expect(result).to be_a(OpenFga::ReadAuthorizationModelResponse)
         expect(result.authorization_model.id).to eq(model_id)
@@ -101,21 +109,21 @@ describe OpenFga::SdkClient do
 
       it 'raises an error if the authorization model does not exist' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models/#{model_id}",
+                                   path: "#{stores_url(store_id)}/authorization-models/#{model_id}",
                                    status: 404,
                                    response_body: {
-                                     "code": "undefined_endpoint",
-                                     "message": "Endpoint not enabled"
+                                     code: 'undefined_endpoint',
+                                     message: 'Endpoint not enabled'
                                    })
         expect { subject.read_authorization_model(store_id, model_id) }.to raise_error(OpenFga::ApiError)
       end
     end
 
-    context "when listing authorization models" do
-      let(:valid_response){ load_json('read_authorization_models') }
+    context 'when listing authorization models' do
+      let(:valid_response) { load_json('read_authorization_models') }
       it 'returns authorization models successfully' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   path: "#{stores_url(store_id)}/authorization-models",
                                    status: 200,
                                    response_body: valid_response)
         result = subject.read_authorization_models(store_id)
@@ -128,16 +136,14 @@ describe OpenFga::SdkClient do
 
       it 'raises an error' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores/#{store_id}/authorization-models",
+                                   path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
         expect { subject.read_authorization_models(store_id) }.to raise_error(OpenFga::ApiError)
       end
     end
   end
 
-  describe "Relationship Queries" do
-    let(:subject) { OpenFga::SdkClient.new(api_url: "https://api.example.dev") }
-
+  describe 'Relationship Queries' do
     # unit tests for batch_check
     # Send a list of &#x60;check&#x60; operations in a single request
     # The &#x60;BatchCheck&#x60; API functions nearly identically to &#x60;Check&#x60;, but instead of checking a single user-object relationship BatchCheck accepts a list of relationships to check and returns a map containing &#x60;BatchCheckItem&#x60; response for each check it received.  An associated &#x60;correlation_id&#x60; is required for each check in the batch. This ID is used to correlate a check to the appropriate response. It is a string consisting of only alphanumeric characters or hyphens with a maximum length of 36 characters. This &#x60;correlation_id&#x60; is used to map the result of each check to the item which was checked, so it must be unique for each item in the batch. We recommend using a UUID or ULID as the &#x60;correlation_id&#x60;, but you can use whatever unique identifier you need as long  as it matches this regex pattern: &#x60;^[\\w\\d-]{1,36}$&#x60;  For more details on how &#x60;Check&#x60; functions, see the docs for &#x60;/check&#x60;.  ### Examples #### A BatchCheckRequest &#x60;&#x60;&#x60;json {   \&quot;checks\&quot;: [      {        \&quot;tuple_key\&quot;: {          \&quot;object\&quot;: \&quot;document:2021-budget\&quot;          \&quot;relation\&quot;: \&quot;reader\&quot;,          \&quot;user\&quot;: \&quot;user:anne\&quot;,        },        \&quot;contextual_tuples\&quot;: {...}        \&quot;context\&quot;: {}        \&quot;correlation_id\&quot;: \&quot;01JA8PM3QM7VBPGB8KMPK8SBD5\&quot;      },      {        \&quot;tuple_key\&quot;: {          \&quot;object\&quot;: \&quot;document:2021-budget\&quot;          \&quot;relation\&quot;: \&quot;reader\&quot;,          \&quot;user\&quot;: \&quot;user:bob\&quot;,        },        \&quot;contextual_tuples\&quot;: {...}        \&quot;context\&quot;: {}        \&quot;correlation_id\&quot;: \&quot;01JA8PMM6A90NV5ET0F28CYSZQ\&quot;      }    ] } &#x60;&#x60;&#x60;  Below is a possible response to the above request. Note that the result map&#39;s keys are the &#x60;correlation_id&#x60; values from the checked items in the request: &#x60;&#x60;&#x60;json {    \&quot;result\&quot;: {      \&quot;01JA8PMM6A90NV5ET0F28CYSZQ\&quot;: {        \&quot;allowed\&quot;: false,         \&quot;error\&quot;: {\&quot;message\&quot;: \&quot;\&quot;}      },      \&quot;01JA8PM3QM7VBPGB8KMPK8SBD5\&quot;: {        \&quot;allowed\&quot;: true,         \&quot;error\&quot;: {\&quot;message\&quot;: \&quot;\&quot;}      } } &#x60;&#x60;&#x60;
@@ -159,16 +165,15 @@ describe OpenFga::SdkClient do
     # @param [Hash] opts the optional parameters
     # @return [CheckResponse]
     context 'when running a check request' do
-      let(:store_id){ "KJHGFDSUYTREW543GF" }
-      let(:contextual_tuples) do 
+      let(:contextual_tuples) do
           { 
             tuple_keys: [
               {
-                user: "user:anne",
-                relation: "writer",
-                object: "document:2021-budget",
+                user: 'user:anne',
+                relation: 'writer',
+                object: 'document:2021-budget',
                 condition: {
-                  name: "condition1",
+                  name: 'condition1',
                   context: {}
                 }
               }
@@ -178,117 +183,117 @@ describe OpenFga::SdkClient do
 
       it 'should work for authorized tuple' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/check",
+                                   path: "#{stores_url(store_id)}/check",
                                    status: 200,
                                    request_body: { tuple_key:
                                                      {
-                                                       user: "user:anne",
-                                                       relation: "reader",
-                                                       object: "document:2021-budget"
+                                                       user: 'user:anne',
+                                                       relation: 'reader',
+                                                       object: 'document:2021-budget'
                                                      },
-                                                   consistency: "UNSPECIFIED"
+                                                   consistency: 'UNSPECIFIED'
                                    },
-                                   response_body: { allowed: true, resolution: "string" })
+                                   response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id: store_id, user: "user:anne", relation: :reader, object: "document:2021-budget")
+        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget')
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
 
       it 'should fail for unauthorized tuple' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/check",
+                                   path: "#{stores_url(store_id)}/check",
                                    status: 200,
                                    request_body: { tuple_key:
                                                      {
-                                                       user: "user:anne",
-                                                       relation: "reader",
-                                                       object: "document:2021-budget"
+                                                       user: 'user:anne',
+                                                       relation: 'reader',
+                                                       object: 'document:2021-budget'
                                                      },
-                                                   consistency: "UNSPECIFIED"
+                                                   consistency: 'UNSPECIFIED'
                                    },
-                                   response_body: { allowed: false, resolution: "string" })
+                                   response_body: { allowed: false, resolution: 'string' })
 
-        response = subject.check(store_id: store_id, user: "user:anne", relation: :reader, object: "document:2021-budget")
+        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget')
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be false
       end
 
-      it "should raise an error if store_id is missing" do
-        expect { subject.check(store_id: nil, user: "user:anne", relation: :reader, object: "roadmap") }.to raise_error(ArgumentError)
+      it 'should raise an error if store_id is missing' do
+        expect { subject.check(store_id: nil, user: 'user:anne', relation: :reader, object: 'roadmap') }.to raise_error(ArgumentError)
       end
 
-      it "should raise an error if user is missing" do
-        expect { subject.check(store_id: store_id, user: nil, relation: :reader, object: "roadmap") }.to raise_error(ArgumentError)
+      it 'should raise an error if user is missing' do
+        expect { subject.check(store_id:, user: nil, relation: :reader, object: 'roadmap') }.to raise_error(ArgumentError)
       end
 
-      it "should raise an error if relation is missing" do
-        expect { subject.check(store_id: store_id, user: "user:anne", relation: nil, object: "roadmap") }.to raise_error(ArgumentError)
+      it 'should raise an error if relation is missing' do
+        expect { subject.check(store_id:, user: 'user:anne', relation: nil, object: 'roadmap') }.to raise_error(ArgumentError)
       end
 
-      it "should raise an error if object is missing" do
-        expect { subject.check(store_id: nil, user: "user:anne", relation: :reader, object: nil) }.to raise_error(ArgumentError)
+      it 'should raise an error if object is missing' do
+        expect { subject.check(store_id: nil, user: 'user:anne', relation: :reader, object: nil) }.to raise_error(ArgumentError)
       end
 
-      it "should work with contextual tuples" do
+      it 'should work with contextual tuples' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/check",
+                                   path: "#{stores_url(store_id)}/check",
                                    status: 200,
                                    request_body: { tuple_key:
                                                      {
-                                                       user: "user:anne",
-                                                       relation: "reader",
-                                                       object: "document:2021-budget"
+                                                       user: 'user:anne',
+                                                       relation: 'reader',
+                                                       object: 'document:2021-budget'
                                                      },
-                                                   contextual_tuples: contextual_tuples,
-                                                   consistency: "UNSPECIFIED"
+                                                   contextual_tuples:,
+                                                   consistency: 'UNSPECIFIED'
                                    },
-                                   response_body: { allowed: true, resolution: "string" })
+                                   response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id: store_id, user: "user:anne", relation: :reader, object: "document:2021-budget",
-                                 opts: { contextual_tuples: contextual_tuples} )
+        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget',
+                                 opts: { contextual_tuples: })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
 
-      it "should work with different authorization_model_id" do
+      it 'should work with different authorization_model_id' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/check",
+                                   path: "#{stores_url(store_id)}/check",
                                    status: 200,
                                    request_body: {
                                      tuple_key: {
-                                       user: "user:anne",
-                                       relation: "reader",
-                                       object: "document:2021-budget"
+                                       user: 'user:anne',
+                                       relation: 'reader',
+                                       object: 'document:2021-budget'
                                      },
-                                     authorization_model_id: "KJHGFDSUYTR",
-                                     consistency: "UNSPECIFIED"
+                                     authorization_model_id: 'KJHGFDSUYTR',
+                                     consistency: 'UNSPECIFIED'
                                    },
-                                   response_body: { allowed: true, resolution: "string" })
+                                   response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id: store_id, user: "user:anne", relation: :reader, object: "document:2021-budget",
-                                 opts: {authorization_model_id: "KJHGFDSUYTR"})
+        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget',
+                                 opts: { authorization_model_id: 'KJHGFDSUYTR' })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
 
-      it "should work with context" do
+      it 'should work with context' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores/#{store_id}/check",
+                                   path: "#{stores_url(store_id)}/check",
                                    status: 200,
                                    request_body: {
                                      tuple_key: {
-                                       user: "user:anne",
-                                       relation: "reader",
-                                       object: "document:2021-budget"
+                                       user: 'user:anne',
+                                       relation: 'reader',
+                                       object: 'document:2021-budget'
                                      },
                                      context: {},
-                                     consistency: "UNSPECIFIED"
+                                     consistency: 'UNSPECIFIED'
                                    },
-                                   response_body: { allowed: true, resolution: "string" })
+                                   response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id: store_id, user: "user:anne", relation: :reader, object: "document:2021-budget",
-                                 opts: { context: {} } )
+        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget',
+                                 opts: { context: {} })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -334,9 +339,7 @@ describe OpenFga::SdkClient do
     end
   end
 
-  describe "Stores" do
-    let(:subject) { OpenFga::SdkClient.new(api_url: "https://api.example.dev") }
-
+  describe 'Stores' do
     # unit tests for create_store
     # Create a store
     # Create a unique OpenFGA store which will be used to store authorization models and relationship tuples.
@@ -344,28 +347,28 @@ describe OpenFga::SdkClient do
     # @param [Hash] opts the optional parameters
     # @return [CreateStoreResponse]
     context 'when creating a store' do
-      let(:store_attributes) { { id: 'JHGFD', name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
+      let(:store_attributes) { { id: store_id, name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
 
       it 'creates a store successfully' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores",
+                                   path: stores_url,
                                    status: 200,
-                                   request_body: { name: "new_store"},
+                                   request_body: { name: 'new_store' },
                                    response_body: store_attributes)
 
         response = subject.create_store('new_store')
 
         expect(response).to be_instance_of(OpenFga::CreateStoreResponse)
-        expect(response.id).to eq('JHGFD')
+        expect(response.id).to eq(store_id)
       end
 
       it 'raises an error for invalid store creation request' do
         stub_request_with_response(method: :post,
-                                   path: "http://api.example.dev/stores",
+                                   path: stores_url,
                                    status: 400,
-                                   request_body: { name: ""},
-                                   response_body: { code: "validation_error",
-                                                    message: "Generic validation error" })
+                                   request_body: { name: '' },
+                                   response_body: { code: 'validation_error',
+                                                    message: 'Generic validation error' })
 
         expect { subject.create_store('') }.to raise_error(OpenFga::ApiError)
       end
@@ -380,22 +383,22 @@ describe OpenFga::SdkClient do
     describe 'when deleting a store' do
       it 'should delete store successfully' do
         stub_request_with_response(method: :delete,
-                                   path: "http://api.example.dev/stores/JHGFD",
+                                   path: stores_url(store_id),
                                    status: 204)
-        expect(subject.delete_store('JHGFD')).to be_nil
+        expect(subject.delete_store(store_id)).to be_nil
       end
 
-      it "should raise an error id no store_id is set" do
+      it 'should raise an error id no store_id is set' do
         expect { subject.delete_store(nil) }.to raise_error(ArgumentError)
       end
 
-      it "should raise an error " do
+      it 'should raise an error ' do
         stub_request_with_response(method: :delete,
-                                   path: "http://api.example.dev/stores/JHGFD",
+                                   path: stores_url(store_id),
                                    status: 400,
-                                   response_body: { code: "validation_error",
-                                                    message: "Generic validation error" })
-        expect { subject.delete_store('JHGFD') }.to raise_error(OpenFga::ApiError)
+                                   response_body: { code: 'validation_error',
+                                                    message: 'Generic validation error' })
+        expect { subject.delete_store(store_id) }.to raise_error(OpenFga::ApiError)
       end
     end
 
@@ -406,27 +409,27 @@ describe OpenFga::SdkClient do
     # @param [Hash] opts the optional parameters
     # @return [GetStoreResponse]
     describe 'when getting a store' do
-      let(:store_attributes) { { id: 'JHGFD', name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
+      let(:store_attributes) { { id: store_id, name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
 
       it 'should get a store successfully' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores/JHGFD",
+                                   path: stores_url(store_id),
                                    status: 200,
                                    response_body: store_attributes)
-        response = subject.get_store('JHGFD')
+        response = subject.get_store(store_id)
         expect(response).to be_instance_of(OpenFga::GetStoreResponse)
-        expect(response.id).to eq('JHGFD')
+        expect(response.id).to eq(store_id)
       end
 
-      it "should raise an error id no store_id is set" do
+      it 'should raise an error id no store_id is set' do
         expect { subject.get_store(nil) }.to raise_error(ArgumentError)
       end
 
-      it "should raise an error " do
+      it 'should raise an error ' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores/JHGFD",
+                                   path: stores_url(store_id),
                                    status: 400)
-        expect { subject.get_store('JHGFD') }.to raise_error(OpenFga::ApiError)
+        expect { subject.get_store(store_id) }.to raise_error(OpenFga::ApiError)
       end
     end
 
@@ -438,24 +441,106 @@ describe OpenFga::SdkClient do
     #   @option opts [String] :continuation_token
     #   @return [ListStoresResponse]
     describe 'when listing stores' do
-      let(:store_attributes) { { id: 'JHGFD', name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
+      let(:store_attributes) { { id: store_id, name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
 
       it 'should list stores successfully' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores",
+                                   path: stores_url,
                                    status: 200,
                                    response_body: { stores: [store_attributes],
-                                                    continuation_token: "eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ"})
+                                                    continuation_token: 'eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ' })
         response = subject.list_stores
         expect(response).to be_instance_of(OpenFga::ListStoresResponse)
-        expect(response.stores[0].id).to eq('JHGFD')
+        expect(response.stores[0].id).to eq(store_id)
       end
 
-      it "should raise an error " do
+      it 'should raise an error ' do
         stub_request_with_response(method: :get,
-                                   path: "http://api.example.dev/stores",
+                                   path: stores_url,
                                    status: 400)
         expect { subject.list_stores }.to raise_error(OpenFga::ApiError)
+      end
+    end
+  end
+
+  describe 'Tuples' do
+    describe 'when reading changes' do
+      let(:response_body) { {
+        changes: [
+          {
+            tuple_key: {
+              user: 'user:anne',
+              relation: 'reader',
+              object: 'document:2021-budget',
+              condition: {
+                name: 'condition1',
+                context: {}
+              }
+            },
+            operation: 'TUPLE_OPERATION_WRITE',
+            timestamp: '2025-04-23T14:30:00.000Z'
+          }
+        ],
+        continuation_token: 'eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ=='
+      } }
+
+      describe 'when there are no options' do
+        before do
+          stub_request_with_response(method: :get,
+                                     path: "#{stores_url(store_id)}/changes",
+                                     status: 200,
+                                     response_body:)
+
+          @response = subject.read_changes({}, store_id:)
+        end
+
+        it 'should read tuple changes successfully' do
+          expect(@response).to be_a(OpenFga::ReadChangesResponse)
+        end
+
+        it 'contains the expected changes' do
+          expect(@response.changes.size).to eq(1)
+          expect(@response.changes[0].tuple_key.user).to eq('user:anne')
+          expect(@response.changes[0].operation).to eq('TUPLE_OPERATION_WRITE')
+        end
+
+        it 'contains a continuation token' do
+          expect(@response.continuation_token).not_to be_nil
+        end
+
+        it 'should raise an error if store_id is missing' do
+          expect { subject.read_changes({}, store_id: nil) }.to raise_error(ArgumentError)
+        end
+
+        it 'should not raise an error if the store_id is given as client config' do
+          client = OpenFga::SdkClient.new(api_url:, store_id:)
+          expect { client.read_changes }.not_to raise_error
+        end
+      end
+
+      describe 'when there are options' do
+        it 'should send the correct request' do
+          stub_request_with_response(
+            method: :get,
+            path: "#{stores_url(store_id)}/changes?page_size=10&type=document&start_time=2025-04-23T14%3A30%3A00.000Z&continuation_token=token",
+            status: 200,
+            response_body:)
+
+          body = {
+            type: :document,
+            start_time: '2025-04-23T14:30:00.000Z',
+          }
+
+          opts = {
+            continuation_token: 'token',
+            store_id:,
+            page_size: 10
+          }
+
+          # call will fail if the request if `path` above is not generated correctly
+          # based on `body` and `opts`.
+          expect { subject.read_changes(body, opts) }.not_to raise_error
+        end
       end
     end
   end
