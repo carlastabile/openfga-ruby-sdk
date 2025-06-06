@@ -16,3 +16,5 @@ class ConfigurationNilError < ConfigurationError
 end
 
 class MissingStoreIdError < ConfigurationNilError; end
+
+class MissingAuthorizationModelIdError < ConfigurationNilError; end
