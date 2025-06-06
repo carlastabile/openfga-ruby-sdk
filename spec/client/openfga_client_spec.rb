@@ -148,7 +148,6 @@ describe OpenFga::SdkClient do
   end
 
   describe 'Assertions' do
-      let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
       let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
       let(:assertions) do
         [
