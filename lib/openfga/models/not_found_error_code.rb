@@ -15,10 +15,10 @@ require 'time'
 
 module OpenFga
   class NotFoundErrorCode
-    NO_NOT_FOUND_ERROR = "no_not_found_error".freeze
-    UNDEFINED_ENDPOINT = "undefined_endpoint".freeze
-    STORE_ID_NOT_FOUND = "store_id_not_found".freeze
-    UNIMPLEMENTED = "unimplemented".freeze
+    NO_NOT_FOUND_ERROR = 'no_not_found_error'.freeze
+    UNDEFINED_ENDPOINT = 'undefined_endpoint'.freeze
+    STORE_ID_NOT_FOUND = 'store_id_not_found'.freeze
+    UNIMPLEMENTED = 'unimplemented'.freeze
 
     def self.all_vars
       @all_vars ||= [NO_NOT_FOUND_ERROR, UNDEFINED_ENDPOINT, STORE_ID_NOT_FOUND, UNIMPLEMENTED].freeze

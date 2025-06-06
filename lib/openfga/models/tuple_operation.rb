@@ -15,8 +15,8 @@ require 'time'
 
 module OpenFga
   class TupleOperation
-    WRITE = "TUPLE_OPERATION_WRITE".freeze
-    DELETE = "TUPLE_OPERATION_DELETE".freeze
+    WRITE = 'TUPLE_OPERATION_WRITE'.freeze
+    DELETE = 'TUPLE_OPERATION_DELETE'.freeze
 
     def self.all_vars
       @all_vars ||= [WRITE, DELETE].freeze

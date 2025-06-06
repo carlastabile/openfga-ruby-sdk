@@ -27,10 +27,10 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'tuple_key' => :'tuple_key',
-        :'correlation_id' => :'correlation_id',
-        :'contextual_tuples' => :'contextual_tuples',
-        :'context' => :'context'
+        'tuple_key': :'tuple_key',
+        'correlation_id': :'correlation_id',
+        'contextual_tuples': :'contextual_tuples',
+        'context': :'context'
       }
     end
 
@@ -47,10 +47,10 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'tuple_key' => :'CheckRequestTupleKey',
-        :'correlation_id' => :'String',
-        :'contextual_tuples' => :'ContextualTupleKeys',
-        :'context' => :'Object'
+        'tuple_key': :'CheckRequestTupleKey',
+        'correlation_id': :'String',
+        'contextual_tuples': :'ContextualTupleKeys',
+        'context': :'Object'
       }
     end
 
@@ -64,7 +64,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::BatchCheckItem` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::BatchCheckItem` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

@@ -34,7 +34,7 @@ module OpenFga
     # @option config [Configuration] Configuration for initializing the object, default to Configuration.default
     def initialize(config = Configuration.default)
       @config = config
-      @user_agent = "openfga-sdk ruby/0.0.1"
+      @user_agent = 'openfga-sdk ruby/0.0.1'
       @default_headers = {
         'Content-Type' => 'application/json',
         'User-Agent' => @user_agent
@@ -190,14 +190,14 @@ module OpenFga
       end
       prefix = prefix + '-' unless prefix.end_with?('-')
 
-      tempfile = Tempfile.open(prefix, @config.temp_folder_path, encoding: encoding)
+      tempfile = Tempfile.open(prefix, @config.temp_folder_path, encoding:)
       tempfile.write(content)
       tempfile.close
 
       config.logger.info "Temp file written to #{tempfile.path}, please copy the file to a proper folder "\
                           "with e.g. `FileUtils.cp(tempfile.path, '/new/file/path')` otherwise the temp file "\
                           "will be deleted automatically with GC. It's also recommended to delete the temp file "\
-                          "explicitly with `tempfile.delete`"
+                          'explicitly with `tempfile.delete`'
       tempfile
     end
 
@@ -275,7 +275,7 @@ module OpenFga
       fail "Content-Type is not supported: #{content_type}" unless json_mime?(content_type)
 
       begin
-        data = JSON.parse("[#{body}]", :symbolize_names => true)[0]
+        data = JSON.parse("[#{body}]", symbolize_names: true)[0]
       rescue JSON::ParserError => e
         if %w(String Date Time).include?(return_type)
           data = body

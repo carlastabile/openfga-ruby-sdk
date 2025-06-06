@@ -46,9 +46,9 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'input_error' => :'input_error',
-        :'internal_error' => :'internal_error',
-        :'message' => :'message'
+        'input_error': :'input_error',
+        'internal_error': :'internal_error',
+        'message': :'message'
       }
     end
 
@@ -65,9 +65,9 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'input_error' => :'ErrorCode',
-        :'internal_error' => :'InternalErrorCode',
-        :'message' => :'String'
+        'input_error': :'ErrorCode',
+        'internal_error': :'InternalErrorCode',
+        'message': :'String'
       }
     end
 
@@ -81,7 +81,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::CheckError` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::CheckError` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

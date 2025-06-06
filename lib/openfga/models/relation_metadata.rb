@@ -24,9 +24,9 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'directly_related_user_types' => :'directly_related_user_types',
-        :'_module' => :'module',
-        :'source_info' => :'source_info'
+        'directly_related_user_types': :'directly_related_user_types',
+        '_module': :'module',
+        'source_info': :'source_info'
       }
     end
 
@@ -43,9 +43,9 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'directly_related_user_types' => :'Array<RelationReference>',
-        :'_module' => :'String',
-        :'source_info' => :'SourceInfo'
+        'directly_related_user_types': :'Array<RelationReference>',
+        '_module': :'String',
+        'source_info': :'SourceInfo'
       }
     end
 
@@ -59,7 +59,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::RelationMetadata` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::RelationMetadata` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

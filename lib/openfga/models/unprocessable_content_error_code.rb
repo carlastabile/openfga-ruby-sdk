@@ -15,8 +15,8 @@ require 'time'
 
 module OpenFga
   class UnprocessableContentErrorCode
-    NO_THROTTLED_ERROR_CODE = "no_throttled_error_code".freeze
-    THROTTLED_TIMEOUT_ERROR = "throttled_timeout_error".freeze
+    NO_THROTTLED_ERROR_CODE = 'no_throttled_error_code'.freeze
+    THROTTLED_TIMEOUT_ERROR = 'throttled_timeout_error'.freeze
 
     def self.all_vars
       @all_vars ||= [NO_THROTTLED_ERROR_CODE, THROTTLED_TIMEOUT_ERROR].freeze

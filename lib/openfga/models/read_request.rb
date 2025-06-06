@@ -48,10 +48,10 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'tuple_key' => :'tuple_key',
-        :'page_size' => :'page_size',
-        :'continuation_token' => :'continuation_token',
-        :'consistency' => :'consistency'
+        'tuple_key': :'tuple_key',
+        'page_size': :'page_size',
+        'continuation_token': :'continuation_token',
+        'consistency': :'consistency'
       }
     end
 
@@ -68,10 +68,10 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'tuple_key' => :'ReadRequestTupleKey',
-        :'page_size' => :'Integer',
-        :'continuation_token' => :'String',
-        :'consistency' => :'ConsistencyPreference'
+        'tuple_key': :'ReadRequestTupleKey',
+        'page_size': :'Integer',
+        'continuation_token': :'String',
+        'consistency': :'ConsistencyPreference'
       }
     end
 
@@ -85,7 +85,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::ReadRequest` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::ReadRequest` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

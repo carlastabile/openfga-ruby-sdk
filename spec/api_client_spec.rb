@@ -33,7 +33,7 @@ describe OpenFga::ApiClient do
       end
 
       context 'base_path' do
-        it "prepends a slash to base_path" do
+        it 'prepends a slash to base_path' do
           OpenFga.configure { |c| c.base_path = 'v4/dog' }
           expect(OpenFga::Configuration.default.base_path).to eq('/v4/dog')
         end
@@ -43,7 +43,7 @@ describe OpenFga::ApiClient do
           expect(OpenFga::Configuration.default.base_path).to eq('/v4/dog')
         end
 
-        it "ends up as a blank string if nil" do
+        it 'ends up as a blank string if nil' do
           OpenFga.configure { |c| c.base_path = nil }
           expect(OpenFga::Configuration.default.base_path).to eq('')
         end
@@ -87,10 +87,10 @@ describe OpenFga::ApiClient do
   end
 
   describe '#deserialize' do
-    it "handles Array<Integer>" do
+    it 'handles Array<Integer>' do
       api_client = OpenFga::ApiClient.new
       headers = { 'Content-Type' => 'application/json' }
-      response = double('response', headers: headers, body: '[12, 34]')
+      response = double('response', headers:, body: '[12, 34]')
       data = api_client.deserialize(response, 'Array<Integer>')
       expect(data).to be_instance_of(Array)
       expect(data).to eq([12, 34])
@@ -99,7 +99,7 @@ describe OpenFga::ApiClient do
     it 'handles Array<Array<Integer>>' do
       api_client = OpenFga::ApiClient.new
       headers = { 'Content-Type' => 'application/json' }
-      response = double('response', headers: headers, body: '[[12, 34], [56]]')
+      response = double('response', headers:, body: '[[12, 34], [56]]')
       data = api_client.deserialize(response, 'Array<Array<Integer>>')
       expect(data).to be_instance_of(Array)
       expect(data).to eq([[12, 34], [56]])
@@ -108,14 +108,14 @@ describe OpenFga::ApiClient do
     it 'handles Hash<String, String>' do
       api_client = OpenFga::ApiClient.new
       headers = { 'Content-Type' => 'application/json' }
-      response = double('response', headers: headers, body: '{"message": "Hello"}')
+      response = double('response', headers:, body: '{"message": "Hello"}')
       data = api_client.deserialize(response, 'Hash<String, String>')
       expect(data).to be_instance_of(Hash)
-      expect(data).to eq(:message => 'Hello')
+      expect(data).to eq(message: 'Hello')
     end
   end
 
-  describe "#object_to_hash" do
+  describe '#object_to_hash' do
     it 'ignores nils and includes empty arrays' do
       # uncomment below to test object_to_hash for model
       # api_client = OpenFga::ApiClient.new

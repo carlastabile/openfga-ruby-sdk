@@ -15,7 +15,7 @@ require 'time'
 
 module OpenFga
   class NullValue
-    NULL_VALUE = "NULL_VALUE".freeze
+    NULL_VALUE = 'NULL_VALUE'.freeze
 
     def self.all_vars
       @all_vars ||= [NULL_VALUE].freeze

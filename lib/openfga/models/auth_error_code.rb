@@ -15,15 +15,15 @@ require 'time'
 
 module OpenFga
   class AuthErrorCode
-    NO_AUTH_ERROR = "no_auth_error".freeze
-    AUTH_FAILED_INVALID_SUBJECT = "auth_failed_invalid_subject".freeze
-    AUTH_FAILED_INVALID_AUDIENCE = "auth_failed_invalid_audience".freeze
-    AUTH_FAILED_INVALID_ISSUER = "auth_failed_invalid_issuer".freeze
-    INVALID_CLAIMS = "invalid_claims".freeze
-    AUTH_FAILED_INVALID_BEARER_TOKEN = "auth_failed_invalid_bearer_token".freeze
-    BEARER_TOKEN_MISSING = "bearer_token_missing".freeze
-    UNAUTHENTICATED = "unauthenticated".freeze
-    FORBIDDEN = "forbidden".freeze
+    NO_AUTH_ERROR = 'no_auth_error'.freeze
+    AUTH_FAILED_INVALID_SUBJECT = 'auth_failed_invalid_subject'.freeze
+    AUTH_FAILED_INVALID_AUDIENCE = 'auth_failed_invalid_audience'.freeze
+    AUTH_FAILED_INVALID_ISSUER = 'auth_failed_invalid_issuer'.freeze
+    INVALID_CLAIMS = 'invalid_claims'.freeze
+    AUTH_FAILED_INVALID_BEARER_TOKEN = 'auth_failed_invalid_bearer_token'.freeze
+    BEARER_TOKEN_MISSING = 'bearer_token_missing'.freeze
+    UNAUTHENTICATED = 'unauthenticated'.freeze
+    FORBIDDEN = 'forbidden'.freeze
 
     def self.all_vars
       @all_vars ||= [NO_AUTH_ERROR, AUTH_FAILED_INVALID_SUBJECT, AUTH_FAILED_INVALID_AUDIENCE, AUTH_FAILED_INVALID_ISSUER, INVALID_CLAIMS, AUTH_FAILED_INVALID_BEARER_TOKEN, BEARER_TOKEN_MISSING, UNAUTHENTICATED, FORBIDDEN].freeze

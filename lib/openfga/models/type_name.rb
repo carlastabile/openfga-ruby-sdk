@@ -15,18 +15,18 @@ require 'time'
 
 module OpenFga
   class TypeName
-    UNSPECIFIED = "TYPE_NAME_UNSPECIFIED".freeze
-    ANY = "TYPE_NAME_ANY".freeze
-    BOOL = "TYPE_NAME_BOOL".freeze
-    STRING = "TYPE_NAME_STRING".freeze
-    INT = "TYPE_NAME_INT".freeze
-    UINT = "TYPE_NAME_UINT".freeze
-    DOUBLE = "TYPE_NAME_DOUBLE".freeze
-    DURATION = "TYPE_NAME_DURATION".freeze
-    TIMESTAMP = "TYPE_NAME_TIMESTAMP".freeze
-    MAP = "TYPE_NAME_MAP".freeze
-    LIST = "TYPE_NAME_LIST".freeze
-    IPADDRESS = "TYPE_NAME_IPADDRESS".freeze
+    UNSPECIFIED = 'TYPE_NAME_UNSPECIFIED'.freeze
+    ANY = 'TYPE_NAME_ANY'.freeze
+    BOOL = 'TYPE_NAME_BOOL'.freeze
+    STRING = 'TYPE_NAME_STRING'.freeze
+    INT = 'TYPE_NAME_INT'.freeze
+    UINT = 'TYPE_NAME_UINT'.freeze
+    DOUBLE = 'TYPE_NAME_DOUBLE'.freeze
+    DURATION = 'TYPE_NAME_DURATION'.freeze
+    TIMESTAMP = 'TYPE_NAME_TIMESTAMP'.freeze
+    MAP = 'TYPE_NAME_MAP'.freeze
+    LIST = 'TYPE_NAME_LIST'.freeze
+    IPADDRESS = 'TYPE_NAME_IPADDRESS'.freeze
 
     def self.all_vars
       @all_vars ||= [UNSPECIFIED, ANY, BOOL, STRING, INT, UINT, DOUBLE, DURATION, TIMESTAMP, MAP, LIST, IPADDRESS].freeze

@@ -31,12 +31,12 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'this' => :'this',
-        :'computed_userset' => :'computedUserset',
-        :'tuple_to_userset' => :'tupleToUserset',
-        :'union' => :'union',
-        :'intersection' => :'intersection',
-        :'difference' => :'difference'
+        'this': :'this',
+        'computed_userset': :'computedUserset',
+        'tuple_to_userset': :'tupleToUserset',
+        'union': :'union',
+        'intersection': :'intersection',
+        'difference': :'difference'
       }
     end
 
@@ -53,12 +53,12 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'this' => :'Object',
-        :'computed_userset' => :'ObjectRelation',
-        :'tuple_to_userset' => :'TupleToUserset',
-        :'union' => :'Usersets',
-        :'intersection' => :'Usersets',
-        :'difference' => :'Difference'
+        'this': :'Object',
+        'computed_userset': :'ObjectRelation',
+        'tuple_to_userset': :'TupleToUserset',
+        'union': :'Usersets',
+        'intersection': :'Usersets',
+        'difference': :'Difference'
       }
     end
 
@@ -72,7 +72,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::Userset` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::Userset` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

@@ -254,8 +254,8 @@ module OpenFga
     def server_settings
       [
         {
-          url: "",
-          description: "No description provided",
+          url: '',
+          description: 'No description provided',
         }
       ]
     end
@@ -285,13 +285,13 @@ module OpenFga
       server[:variables].each do |name, variable|
         if variables.key?(name)
           if (!server[:variables][name].key?(:enum_values) || server[:variables][name][:enum_values].include?(variables[name]))
-            url.gsub! "{" + name.to_s + "}", variables[name]
+            url.gsub! '{' + name.to_s + '}', variables[name]
           else
             fail ArgumentError, "The variable `#{name}` in the server URL has invalid value #{variables[name]}. Must be #{server[:variables][name][:enum_values]}."
           end
         else
           # use default value
-          url.gsub! "{" + name.to_s + "}", server[:variables][name][:default_value]
+          url.gsub! '{' + name.to_s + '}', server[:variables][name][:default_value]
         end
       end
 
@@ -353,7 +353,7 @@ module OpenFga
     def set_faraday_middleware(operation, key, *args, &block)
       unless [:request, :response, :use, :insert, :insert_before, :insert_after, :swap, :delete].include?(operation)
         fail ArgumentError, "Invalid faraday middleware operation #{operation}. Must be" \
-                            " :request, :response, :use, :insert, :insert_before, :insert_after, :swap or :delete."
+                            ' :request, :response, :use, :insert, :insert_before, :insert_after, :swap or :delete.'
       end
 
       @middlewares[operation] << [key, args, block]

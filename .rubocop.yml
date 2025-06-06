@@ -48,7 +48,8 @@ Layout/FirstArgumentIndentation:
 
 # Use Ruby >= 1.9 syntax for hashes. Prefer { a: :b } over { :a => :b }.
 Style/HashSyntax:
-  Enabled: false
+  Enabled: true
+  EnforcedShorthandSyntax: always
 
 # Method definitions after `private` or `protected` isolated calls need one
 # extra level of indentation.
@@ -111,9 +112,9 @@ Layout/SpaceInsideParens:
   Enabled: true
 
 # Check quotes usage according to lint rule below.
-#Style/StringLiterals:
-#  Enabled: true
-#  EnforcedStyle: single_quotes
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: single_quotes
 
 # Detect hard tabs, no hard tabs.
 Layout/IndentationStyle:

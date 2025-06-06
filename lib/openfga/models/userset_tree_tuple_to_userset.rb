@@ -22,8 +22,8 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'tupleset' => :'tupleset',
-        :'computed' => :'computed'
+        'tupleset': :'tupleset',
+        'computed': :'computed'
       }
     end
 
@@ -40,8 +40,8 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'tupleset' => :'String',
-        :'computed' => :'Array<Computed>'
+        'tupleset': :'String',
+        'computed': :'Array<Computed>'
       }
     end
 
@@ -55,7 +55,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::UsersetTreeTupleToUserset` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::UsersetTreeTupleToUserset` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

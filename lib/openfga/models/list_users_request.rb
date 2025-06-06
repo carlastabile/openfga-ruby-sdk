@@ -56,13 +56,13 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'object' => :'object',
-        :'relation' => :'relation',
-        :'user_filters' => :'user_filters',
-        :'authorization_model_id' => :'authorization_model_id',
-        :'contextual_tuples' => :'contextual_tuples',
-        :'context' => :'context',
-        :'consistency' => :'consistency'
+        'object': :'object',
+        'relation': :'relation',
+        'user_filters': :'user_filters',
+        'authorization_model_id': :'authorization_model_id',
+        'contextual_tuples': :'contextual_tuples',
+        'context': :'context',
+        'consistency': :'consistency'
       }
     end
 
@@ -79,13 +79,13 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'object' => :'FgaObject',
-        :'relation' => :'String',
-        :'user_filters' => :'Array<UserTypeFilter>',
-        :'authorization_model_id' => :'String',
-        :'contextual_tuples' => :'Array<TupleKey>',
-        :'context' => :'Object',
-        :'consistency' => :'ConsistencyPreference'
+        'object': :'FgaObject',
+        'relation': :'String',
+        'user_filters': :'Array<UserTypeFilter>',
+        'authorization_model_id': :'String',
+        'contextual_tuples': :'Array<TupleKey>',
+        'context': :'Object',
+        'consistency': :'ConsistencyPreference'
       }
     end
 
@@ -99,7 +99,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::ListUsersRequest` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::ListUsersRequest` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

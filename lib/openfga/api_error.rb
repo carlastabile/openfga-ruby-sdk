@@ -43,7 +43,7 @@ module OpenFga
 
     def message
       if @message.nil?
-        msg = "Error message: the server returns an error"
+        msg = 'Error message: the server returns an error'
       else
         msg = @message
       end

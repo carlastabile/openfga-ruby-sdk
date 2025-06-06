@@ -15,16 +15,16 @@ require 'time'
 
 module OpenFga
   class InternalErrorCode
-    NO_INTERNAL_ERROR = "no_internal_error".freeze
-    INTERNAL_ERROR = "internal_error".freeze
-    DEADLINE_EXCEEDED = "deadline_exceeded".freeze
-    ALREADY_EXISTS = "already_exists".freeze
-    RESOURCE_EXHAUSTED = "resource_exhausted".freeze
-    FAILED_PRECONDITION = "failed_precondition".freeze
-    ABORTED = "aborted".freeze
-    OUT_OF_RANGE = "out_of_range".freeze
-    UNAVAILABLE = "unavailable".freeze
-    DATA_LOSS = "data_loss".freeze
+    NO_INTERNAL_ERROR = 'no_internal_error'.freeze
+    INTERNAL_ERROR = 'internal_error'.freeze
+    DEADLINE_EXCEEDED = 'deadline_exceeded'.freeze
+    ALREADY_EXISTS = 'already_exists'.freeze
+    RESOURCE_EXHAUSTED = 'resource_exhausted'.freeze
+    FAILED_PRECONDITION = 'failed_precondition'.freeze
+    ABORTED = 'aborted'.freeze
+    OUT_OF_RANGE = 'out_of_range'.freeze
+    UNAVAILABLE = 'unavailable'.freeze
+    DATA_LOSS = 'data_loss'.freeze
 
     def self.all_vars
       @all_vars ||= [NO_INTERNAL_ERROR, INTERNAL_ERROR, DEADLINE_EXCEEDED, ALREADY_EXISTS, RESOURCE_EXHAUSTED, FAILED_PRECONDITION, ABORTED, OUT_OF_RANGE, UNAVAILABLE, DATA_LOSS].freeze

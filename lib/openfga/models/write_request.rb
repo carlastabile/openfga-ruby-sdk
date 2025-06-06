@@ -24,9 +24,9 @@ module OpenFga
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'writes' => :'writes',
-        :'deletes' => :'deletes',
-        :'authorization_model_id' => :'authorization_model_id'
+        'writes': :'writes',
+        'deletes': :'deletes',
+        'authorization_model_id': :'authorization_model_id'
       }
     end
 
@@ -43,9 +43,9 @@ module OpenFga
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'writes' => :'WriteRequestWrites',
-        :'deletes' => :'WriteRequestDeletes',
-        :'authorization_model_id' => :'String'
+        'writes': :'WriteRequestWrites',
+        'deletes': :'WriteRequestDeletes',
+        'authorization_model_id': :'String'
       }
     end
 
@@ -59,7 +59,7 @@ module OpenFga
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `OpenFga::WriteRequest` initialize method"
+        fail ArgumentError, 'The input argument (attributes) must be a hash in `OpenFga::WriteRequest` initialize method'
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key

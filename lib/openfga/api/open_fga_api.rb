@@ -77,13 +77,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.batch_check",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.batch_check",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -151,13 +151,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.check",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.check",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -219,13 +219,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.create_store",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.create_store",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -282,13 +282,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.delete_store",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.delete_store",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
@@ -356,13 +356,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.expand",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.expand",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -419,13 +419,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.get_store",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.get_store",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
@@ -493,13 +493,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.list_objects",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.list_objects",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -556,13 +556,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.list_stores",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.list_stores",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
@@ -630,13 +630,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.list_users",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.list_users",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -704,13 +704,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.read",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.read",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -773,13 +773,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.read_assertions",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.read_assertions",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
@@ -842,13 +842,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.read_authorization_model",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.read_authorization_model",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
@@ -911,13 +911,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.read_authorization_models",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.read_authorization_models",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
@@ -986,13 +986,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.read_changes",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.read_changes",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
@@ -1060,13 +1060,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.write",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.write",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
@@ -1140,13 +1140,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.write_assertions",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.write_assertions",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
@@ -1214,13 +1214,13 @@ module OpenFga
       auth_names = opts[:debug_auth_names] || []
 
       new_options = opts.merge(
-        :operation => :"OpenFgaApi.write_authorization_model",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
+        operation: :"OpenFgaApi.write_authorization_model",
+        header_params:,
+        query_params:,
+        form_params:,
+        body: post_body,
+        auth_names:,
+        return_type:
       )
 
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)

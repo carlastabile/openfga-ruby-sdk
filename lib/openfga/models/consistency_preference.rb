@@ -15,9 +15,9 @@ require 'time'
 
 module OpenFga
   class ConsistencyPreference
-    UNSPECIFIED = "UNSPECIFIED".freeze
-    MINIMIZE_LATENCY = "MINIMIZE_LATENCY".freeze
-    HIGHER_CONSISTENCY = "HIGHER_CONSISTENCY".freeze
+    UNSPECIFIED = 'UNSPECIFIED'.freeze
+    MINIMIZE_LATENCY = 'MINIMIZE_LATENCY'.freeze
+    HIGHER_CONSISTENCY = 'HIGHER_CONSISTENCY'.freeze
 
     def self.all_vars
       @all_vars ||= [UNSPECIFIED, MINIMIZE_LATENCY, HIGHER_CONSISTENCY].freeze
