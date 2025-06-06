@@ -184,7 +184,7 @@ describe OpenFga::SdkClient do
                                      status: 200,
                                      response_body: { authorization_model_id:, assertions: })
 
-          @response = subject.read_assertions(store_id:, authorization_model_id: authorization_model_id)
+          @response = subject.read_assertions(store_id:, authorization_model_id:)
         end
 
         it 'retrieves assertions successfully' do
