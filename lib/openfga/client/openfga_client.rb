@@ -53,18 +53,52 @@ module OpenFga
       @api_client.list_stores(opts)
     end
 
+    # Writes an authorization model
+    # Creates or updates an authorization model for a specific store.
+    #
+    # @param store_id [String] The ID of the store where the authorization model will be written.
+    # @param body [WriteAuthorizationModelRequest] The request body containing the authorization model details.
+    # @param opts [Hash] Optional parameters for the request.
+    # @return [WriteAuthorizationModelResponse] The response from the API after writing the authorization model.
     def write_authorization_model(store_id, body, opts = {})
       @api_client.write_authorization_model(store_id, body, opts)
     end
 
+    # Reads an authorization model
+    # Retrieves a specific authorization model by its ID from a given store.
+    # @param store_id [String] The ID of the store from which to read the authorization model.
+    # @param id [String] The ID of the authorization model to read.
+    # @param opts [Hash] Optional parameters for the request.
+    # @raise [ArgumentError] If the `store_id` or `id` is not provided.
+    # @return [ReadAuthorizationModelResponse] The response containing the authorization model details.
     def read_authorization_model(store_id, id, opts = {})
       @api_client.read_authorization_model(store_id, id, opts)
     end
 
+    # Reads all authorization models
+    # Retrieves all authorization models for a specific store.
+    # @param store_id [String] The ID of the store from which to read the authorization models.
+    # @param opts [Hash] Optional parameters for the request.
+    # @raise [ArgumentError] If the `store_id` is not provided.
+    # @return [ReadAuthorizationModelsResponse] The response containing the list of authorization models.
     def read_authorization_models(store_id, opts = {})
       @api_client.read_authorization_models(store_id, opts)
     end
 
+    # Checks whether a specific relationship exists in the store.
+    #
+    # @param store_id [String] The ID of the store where the check is performed.
+    # @param user [String] The user involved in the relationship.
+    # @param relation [String, Symbol] The relation to check (e.g., "reader", "owner").
+    # @param object [String] The object involved in the relationship.
+    # @param opts [Hash] Optional parameters for the check.
+    #   @option opts [Hash] :contextual_tuples Additional contextual tuples to include in the check.
+    #   @option opts [String] :authorization_model_id The ID of the authorization model to use for the check.
+    #   @option opts [Hash] :context Additional context for the check.
+    #
+    # @raise [ArgumentError] If any of the required parameters (`user`, `relation`, or `object`) are missing.
+    #
+    # @return [CheckResponse] The result of the check operation.
     def check(store_id:, user:, relation:, object:, opts: {})
       fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
       fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
@@ -109,11 +143,45 @@ module OpenFga
       @api_client.read_changes(store_id(opts), opts.merge(body))
     end
 
-    private
+    # GET /stores/{store_id}/assertions/{authorization_model_id}
+    # Retrieve assertions for a specific store and authorization model
+    # @param [Hash] opts The optional parameters
+    # @return [GetAssertionsResponse]
+    def read_assertions(opts = {})
+      @api_client.read_assertions(store_id(opts), authorization_model_id(opts), opts)
+    end
 
+    # PUT /stores/{store_id}/assertions/{authorization_model_id}
+    # Update assertions for a specific store and authorization model
+    # @param body [UpdateAssertionsRequest] The request body containing the assertions
+    # @param [Hash] opts The optional parameters
+    # @return [nil]
+    def write_assertions(body = {}, opts = {})
+      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+
+      request_body = WriteAssertionsRequest.new(body)
+
+      @api_client.write_assertions(store_id(opts), authorization_model_id(opts), request_body, opts)
+    end
+
+    private
+      # Returns the store ID from the options or configuration.
+      # Raises MissingStoreIdError if the store ID is not provided.
+      # @param opts [Hash, nil] Optional parameters that may include :store_id.
+      # @return [String] The store ID.
       def store_id(opts = nil)
         id = (opts || {})[:store_id] || @config[:store_id]
         fail MissingStoreIdError unless id
+        id
+      end
+
+      # Returns the authorization model ID from the options or configuration.
+      # Raises MissingAuthorizationModelIdError if the authorization model ID is not provided.
+      # @param opts [Hash, nil] Optional parameters that may include :authorization_model_id.
+      # @return [String] The authorization model ID.
+      def authorization_model_id(opts = nil)
+        id = (opts || {})[:authorization_model_id] || @config[:authorization_model_id]
+        fail MissingAuthorizationModelIdError unless id
         id
       end
   end

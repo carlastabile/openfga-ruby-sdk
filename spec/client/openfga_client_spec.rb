@@ -147,6 +147,106 @@ describe OpenFga::SdkClient do
     end
   end
 
+  describe 'Assertions' do
+      let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
+      let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
+      let(:assertions) do
+        [
+          {
+            tuple_key: {
+              object: 'document:2021-budget',
+              relation: 'reader',
+              user: 'user:anne'
+            },
+            expectation: true,
+            contextual_tuples: [
+              {
+                user: 'user:anne',
+                relation: 'reader',
+                object: 'document:2021-budget',
+                condition: {
+                  name: 'condition1',
+                  context: {}
+                }
+              }
+            ],
+            context: {
+              view_count: 100
+            }
+          }
+        ]
+      end
+
+      context 'when getting assertions' do
+        before do
+          stub_request_with_response(method: :get,
+                                     path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                     status: 200,
+                                     response_body: { authorization_model_id:, assertions: })
+
+          @response = subject.read_assertions(store_id:, authorization_model_id: authorization_model_id)
+        end
+
+        it 'retrieves assertions successfully' do
+          expect(@response).to be_a(OpenFga::ReadAssertionsResponse)
+          expect(@response.assertions.size).to eq(1)
+          expect(@response.assertions[0].tuple_key.user).to eq('user:anne')
+          expect(@response.assertions[0].expectation).to eq(true)
+        end
+
+        it 'raises an error if store_id is missing' do
+          expect { subject.read_assertions(store_id: nil, authorization_model_id:) }.to raise_error(ArgumentError)
+        end
+
+        it 'raises an error if model_id is missing' do
+          expect { subject.read_assertions(store_id:, authorization_model_id: nil) }.to raise_error(ArgumentError)
+        end
+
+        it 'raises an error if the assertions do not exist' do
+          stub_request_with_response(method: :get,
+                                     path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                     status: 404,
+                                     response_body: {
+                                       code: 'undefined_endpoint',
+                                       message: 'Endpoint not enabled'
+                                     })
+          expect { subject.read_assertions(store_id:, authorization_model_id:) }.to raise_error(OpenFga::ApiError)
+        end
+      end
+
+      describe 'when writing assertions' do
+        it 'writes assertions successfully' do
+          stub_request_with_response(method: :put,
+                                     path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                     status: 204,
+                                     request_body: { assertions: })
+
+          expect { subject.write_assertions({ assertions: }, store_id:, authorization_model_id:) }.not_to raise_error
+        end
+
+        it 'raises an error if store_id is missing' do
+          expect { subject.write_assertions(store_id: nil, authorization_model_id:) }.to raise_error(ArgumentError)
+        end
+
+        it 'raises an error if model_id is missing' do
+          expect { subject.write_assertions(store_id:, authorization_model_id: nil) }.to raise_error(ArgumentError)
+        end
+
+        it 'raises an error for invalid assertions' do
+          stub_request_with_response(method: :put,
+                                     path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                     status: 400,
+                                     request_body: { assertions: [] },
+                                     response_body: {
+                                       code: 'validation_error',
+                                       message: 'Invalid assertions'
+                                     })
+
+          expect { subject.write_assertions({ assertions: [] }, store_id:, authorization_model_id:) }.to raise_error(OpenFga::ApiError)
+        end
+      end
+    end
+
   describe 'Relationship Queries' do
     let(:subject) { OpenFga::SdkClient.new(api_url:) }
 
