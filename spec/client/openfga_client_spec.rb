@@ -10,8 +10,11 @@ describe OpenFga::SdkClient do
   end
 
   def stores_url(store_id = nil)
-    return "#{api_url}#{store_path(store_id)}" if store_id
-    "#{api_url}/stores"
+    if store_id
+      "#{api_url}#{store_path(store_id)}" if store_id
+    else
+      "#{api_url}/stores"
+    end
   end
 
   describe 'Configuration errors' do
@@ -194,11 +197,11 @@ describe OpenFga::SdkClient do
         end
 
         it 'raises an error if store_id is missing' do
-          expect { subject.read_assertions(store_id: nil, authorization_model_id:) }.to raise_error(ArgumentError)
+          expect { subject.read_assertions(store_id: nil, authorization_model_id:) }.to raise_error(MissingStoreIdError)
         end
 
         it 'raises an error if model_id is missing' do
-          expect { subject.read_assertions(store_id:, authorization_model_id: nil) }.to raise_error(ArgumentError)
+          expect { subject.read_assertions(store_id:, authorization_model_id: nil) }.to raise_error(MissingAuthorizationModelIdError)
         end
 
         it 'raises an error if the assertions do not exist' do
@@ -617,7 +620,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'should raise an error if store_id is missing' do
-          expect { subject.read_changes({}, store_id: nil) }.to raise_error(ArgumentError)
+          expect { subject.read_changes({}, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
 
         it 'should not raise an error if the store_id is given as client config' do
@@ -648,6 +651,76 @@ describe OpenFga::SdkClient do
           # call will fail if the request if `path` above is not generated correctly
           # based on `body` and `opts`.
           expect { subject.read_changes(body, opts) }.not_to raise_error
+        end
+      end
+    end
+
+    describe 'when reading tuples' do
+      let(:request_body) { {
+                                   tuple_key: {
+                                     user: 'user:1',
+                                     relation: 'reader',
+                                     object: 'document:'
+                                   },
+                                   page_size: 50
+                                 }}
+
+      let(:response_body) {
+        {
+          tuples: [
+            key: {
+              user: 'user:1',
+              relation: 'reader',
+              object: 'document:1'
+            },
+            timestamp: '2025-06-06T14:30:00.000Z',
+          ],
+          continuation_token: 'token',
+        }
+      }
+
+      let(:read_request) {
+        { user: 'user:1', relation: :reader, object: 'document:' }
+      }
+
+      describe 'when there are no options' do
+        before do
+          @stub = stub_request_with_response(method: :post,
+                                     path: "#{stores_url(store_id)}/read",
+                                     status: 200,
+                                     request_body:,
+                                     response_body:)
+
+          @response = subject.read(read_request, store_id:)
+        end
+
+        it 'should read tuples successfully' do
+          expect(@stub).to have_been_requested
+          expect(@response).to be_a(OpenFga::ReadResponse)
+        end
+
+        it 'should raise an error if store_id is missing' do
+          expect { subject.read(read_request, store_id: nil) }.to raise_error(MissingStoreIdError)
+        end
+      end
+
+      describe 'when there are options' do
+        it 'should send the correct request' do
+          opts = {
+            page_size: 20,
+            continuation_token: 'continuation_token',
+            store_id:
+          }
+
+          stub = stub_request_with_response(
+            path: "#{stores_url(store_id)}/read",
+            method: :post,
+            status: 200,
+            request_body: request_body.merge(opts.except(:store_id)),
+            response_body:)
+
+          subject.read(read_request, opts)
+          expect(stub).to have_been_requested
         end
       end
     end

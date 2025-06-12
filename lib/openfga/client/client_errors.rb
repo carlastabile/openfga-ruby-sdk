@@ -15,6 +15,14 @@ class ConfigurationNilError < ConfigurationError
   end 
 end
 
-class MissingStoreIdError < ConfigurationNilError; end
+class MissingStoreIdError < ConfigurationNilError
+  def initialize
+    super :store_id
+  end
+end
 
-class MissingAuthorizationModelIdError < ConfigurationNilError; end
+class MissingAuthorizationModelIdError < ConfigurationNilError
+  def initialize
+    super :store_id
+  end
+end

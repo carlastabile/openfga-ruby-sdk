@@ -164,6 +164,32 @@ module OpenFga
       @api_client.write_assertions(store_id(opts), authorization_model_id(opts), request_body, opts)
     end
 
+    # Read tuples
+    # Reads tuples from the store.
+    # @param [Hash] body The request body
+    # @option body [String] :user The user to read tuples for
+    # @option body [String] :relation The relation to read tuples for
+    # @option body [String] :object The object to read tuples for
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :page_size The number of pages to return in the request
+    # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results.
+    # @option opts [String] :store_id The store ID to read changes from
+    def read(body = {}, opts = {})
+      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+
+      request_body = ReadRequest.new(
+        continuation_token: opts[:continuation_token],
+        page_size: opts[:page_size] || 50,
+        tuple_key: {
+          user: body[:user],
+          relation: body[:relation].to_s,
+          object: body[:object]
+        },
+        consistency: opts[:consistency])
+
+      @api_client.read(store_id(opts), request_body, opts)
+    end
+
     private
       # Returns the store ID from the options or configuration.
       # Raises MissingStoreIdError if the store ID is not provided.
