@@ -71,8 +71,8 @@ module OpenFga
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` or `id` is not provided.
     # @return [ReadAuthorizationModelResponse] The response containing the authorization model details.
-    def read_authorization_model(store_id, id, opts = {})
-      @api_client.read_authorization_model(store_id, id, opts)
+    def read_authorization_model(id, opts = {})
+      @api_client.read_authorization_model(store_id(opts), id, opts)
     end
 
     # Reads all authorization models
