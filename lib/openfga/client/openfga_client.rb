@@ -60,8 +60,8 @@ module OpenFga
     # @param body [WriteAuthorizationModelRequest] The request body containing the authorization model details.
     # @param opts [Hash] Optional parameters for the request.
     # @return [WriteAuthorizationModelResponse] The response from the API after writing the authorization model.
-    def write_authorization_model(store_id, body, opts = {})
-      @api_client.write_authorization_model(store_id, body, opts)
+    def write_authorization_model(body, opts = {})
+      @api_client.write_authorization_model(store_id(opts), body, opts)
     end
 
     # Reads an authorization model

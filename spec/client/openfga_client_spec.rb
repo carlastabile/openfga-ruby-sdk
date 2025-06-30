@@ -53,7 +53,7 @@ describe OpenFga::SdkClient do
                                    request_body: valid_body,
                                    response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
 
-        response = subject.write_authorization_model(store_id, valid_body)
+        response = subject.write_authorization_model(valid_body)
         expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
         expect(response.authorization_model_id).not_to be_nil
       end
@@ -68,21 +68,21 @@ describe OpenFga::SdkClient do
                                      message: 'Generic validation error'
                                    })
 
-        expect { subject.write_authorization_model(store_id, invalid_body) }.to(raise_error(OpenFga::ApiError))
+        expect { subject.write_authorization_model(invalid_body) }.to(raise_error(OpenFga::ApiError))
       end
 
       it 'raises an error if store_id is missing' do
         stub_request_with_response(method: :post,
                                    path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
-        expect { subject.write_authorization_model(nil, valid_body) }.to raise_error(ArgumentError)
+        expect { subject_no_store.write_authorization_model(valid_body) }.to raise_error(MissingStoreIdError)
       end
 
       it 'raises an error if body is missing' do
         stub_request_with_response(method: :post,
                                    path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
-        expect { subject.write_authorization_model(store_id, nil) }.to raise_error(ArgumentError)
+        expect { subject.write_authorization_model }.to raise_error(ArgumentError)
       end
     end
 
