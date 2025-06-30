@@ -30,8 +30,8 @@ describe OpenFga::SdkClient do
   end
 
   describe 'Authorization Models' do
-    let(:subject) { OpenFga::SdkClient.new(api_url:) }
     let(:store_id) { 'JHGFD' }
+    let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
 
     context 'when writing an authorization model' do
       let(:valid_body) { load_json('write_authorization_model', body: true) }
@@ -133,19 +133,20 @@ describe OpenFga::SdkClient do
                                    path: "#{stores_url(store_id)}/authorization-models",
                                    status: 200,
                                    response_body: valid_response)
-        result = subject.read_authorization_models(store_id)
+        result = subject.read_authorization_models
         expect(result).to be_a(OpenFga::ReadAuthorizationModelsResponse)
       end
 
       it 'raises an error if store_id is missing' do
-        expect { subject.read_authorization_models(nil) }.to raise_error(ArgumentError)
+        subject = OpenFga::SdkClient.new(api_url:)
+        expect { subject.read_authorization_models }.to raise_error(MissingStoreIdError)
       end
 
       it 'raises an error' do
         stub_request_with_response(method: :get,
                                    path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
-        expect { subject.read_authorization_models(store_id) }.to raise_error(OpenFga::ApiError)
+        expect { subject.read_authorization_models }.to raise_error(OpenFga::ApiError)
       end
     end
   end
