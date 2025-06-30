@@ -99,7 +99,7 @@ module OpenFga
     # @raise [ArgumentError] If any of the required parameters (`user`, `relation`, or `object`) are missing.
     #
     # @return [CheckResponse] The result of the check operation.
-    def check(store_id:, user:, relation:, object:, opts: {})
+    def check(user:, relation:, object:, opts: {})
       fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
       fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
       fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
@@ -123,7 +123,7 @@ module OpenFga
         request_body.context = opts[:context]
       end
 
-      @api_client.check(store_id, request_body, opts)
+      @api_client.check(store_id(opts), request_body, opts)
     end
 
     # Read changes

@@ -250,7 +250,7 @@ describe OpenFga::SdkClient do
     end
 
   describe 'Relationship Queries' do
-    let(:subject) { OpenFga::SdkClient.new(api_url:) }
+    let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
 
     # unit tests for batch_check
     # Send a list of &#x60;check&#x60; operations in a single request
@@ -304,7 +304,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+        response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -323,7 +323,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: false, resolution: 'string' })
 
-        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+        response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be false
       end
@@ -359,7 +359,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget',
+        response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
                                  opts: { contextual_tuples: })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
@@ -380,7 +380,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget',
+        response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
                                  opts: { authorization_model_id: 'KJHGFDSUYTR' })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
@@ -401,7 +401,7 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(store_id:, user: 'user:anne', relation: :reader, object: 'document:2021-budget',
+        response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
                                  opts: { context: {} })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
