@@ -3,7 +3,8 @@ require 'spec_helper'
 describe OpenFga::SdkClient do
   let(:api_url) { 'http://localhost:8090' }
   let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
-  let(:subject) { OpenFga::SdkClient.new(api_url:) }
+  let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
+  let(:subject_no_store) { OpenFga::SdkClient.new(api_url:) }
 
   def store_path(store_id)
     "/stores/#{store_id}"
@@ -30,14 +31,9 @@ describe OpenFga::SdkClient do
   end
 
   describe 'Authorization Models' do
-    let(:store_id) { 'JHGFD' }
-    let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
-    let(:subject_no_store) { OpenFga::SdkClient.new(api_url:) }
-
     context 'when writing an authorization model' do
       let(:valid_body) { load_json('write_authorization_model', body: true) }
       let(:invalid_body) { { type_definitions: [] } }
-      let(:store_id) { 'KJHGFDSUYTREW543GF' }
 
       # unit tests for write_authorization_model
       # Create a new authorization model
@@ -199,7 +195,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'raises an error if store_id is missing' do
-          expect { subject.read_assertions(store_id: nil, authorization_model_id:) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.read_assertions(authorization_model_id:) }.to raise_error(MissingStoreIdError)
         end
 
         it 'raises an error if model_id is missing' do
@@ -252,8 +248,6 @@ describe OpenFga::SdkClient do
     end
 
   describe 'Relationship Queries' do
-    let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
-
     # unit tests for batch_check
     # Send a list of &#x60;check&#x60; operations in a single request
     # The &#x60;BatchCheck&#x60; API functions nearly identically to &#x60;Check&#x60;, but instead of checking a single user-object relationship BatchCheck accepts a list of relationships to check and returns a map containing &#x60;BatchCheckItem&#x60; response for each check it received.  An associated &#x60;correlation_id&#x60; is required for each check in the batch. This ID is used to correlate a check to the appropriate response. It is a string consisting of only alphanumeric characters or hyphens with a maximum length of 36 characters. This &#x60;correlation_id&#x60; is used to map the result of each check to the item which was checked, so it must be unique for each item in the batch. We recommend using a UUID or ULID as the &#x60;correlation_id&#x60;, but you can use whatever unique identifier you need as long  as it matches this regex pattern: &#x60;^[\\w\\d-]{1,36}$&#x60;  For more details on how &#x60;Check&#x60; functions, see the docs for &#x60;/check&#x60;.  ### Examples #### A BatchCheckRequest &#x60;&#x60;&#x60;json {   \&quot;checks\&quot;: [      {        \&quot;tuple_key\&quot;: {          \&quot;object\&quot;: \&quot;document:2021-budget\&quot;          \&quot;relation\&quot;: \&quot;reader\&quot;,          \&quot;user\&quot;: \&quot;user:anne\&quot;,        },        \&quot;contextual_tuples\&quot;: {...}        \&quot;context\&quot;: {}        \&quot;correlation_id\&quot;: \&quot;01JA8PM3QM7VBPGB8KMPK8SBD5\&quot;      },      {        \&quot;tuple_key\&quot;: {          \&quot;object\&quot;: \&quot;document:2021-budget\&quot;          \&quot;relation\&quot;: \&quot;reader\&quot;,          \&quot;user\&quot;: \&quot;user:bob\&quot;,        },        \&quot;contextual_tuples\&quot;: {...}        \&quot;context\&quot;: {}        \&quot;correlation_id\&quot;: \&quot;01JA8PMM6A90NV5ET0F28CYSZQ\&quot;      }    ] } &#x60;&#x60;&#x60;  Below is a possible response to the above request. Note that the result map&#39;s keys are the &#x60;correlation_id&#x60; values from the checked items in the request: &#x60;&#x60;&#x60;json {    \&quot;result\&quot;: {      \&quot;01JA8PMM6A90NV5ET0F28CYSZQ\&quot;: {        \&quot;allowed\&quot;: false,         \&quot;error\&quot;: {\&quot;message\&quot;: \&quot;\&quot;}      },      \&quot;01JA8PM3QM7VBPGB8KMPK8SBD5\&quot;: {        \&quot;allowed\&quot;: true,         \&quot;error\&quot;: {\&quot;message\&quot;: \&quot;\&quot;}      } } &#x60;&#x60;&#x60;
@@ -275,7 +269,6 @@ describe OpenFga::SdkClient do
     # @param [Hash] opts the optional parameters
     # @return [CheckResponse]
     context 'when running a check request' do
-      let(:store_id) { 'KJHGFDSUYTREW543GF' }
       let(:contextual_tuples) do 
           { 
             tuple_keys: [
@@ -451,8 +444,6 @@ describe OpenFga::SdkClient do
   end
 
   describe 'Stores' do
-    let(:subject) { OpenFga::SdkClient.new(api_url:) }
-
     # unit tests for create_store
     # Create a store
     # Create a unique OpenFGA store which will be used to store authorization models and relationship tuples.
@@ -502,7 +493,7 @@ describe OpenFga::SdkClient do
       end
 
       it 'should raise an error id no store_id is set' do
-        expect { subject.delete_store(nil) }.to raise_error(ArgumentError)
+        expect { subject_no_store.delete_store(nil) }.to raise_error(ArgumentError)
       end
 
       it 'should raise an error ' do
@@ -523,26 +514,27 @@ describe OpenFga::SdkClient do
     # @return [GetStoreResponse]
     describe 'when getting a store' do
       let(:store_attributes) { { id: store_id, name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
+      let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
 
       it 'should get a store successfully' do
         stub_request_with_response(method: :get,
                                    path: stores_url(store_id),
                                    status: 200,
                                    response_body: store_attributes)
-        response = subject.get_store(store_id)
+        response = subject.get_store
         expect(response).to be_instance_of(OpenFga::GetStoreResponse)
         expect(response.id).to eq(store_id)
       end
 
       it 'should raise an error id no store_id is set' do
-        expect { subject.get_store(nil) }.to raise_error(ArgumentError)
+        expect { subject_no_store.get_store }.to raise_error(MissingStoreIdError)
       end
 
       it 'should raise an error ' do
         stub_request_with_response(method: :get,
                                    path: stores_url(store_id),
                                    status: 400)
-        expect { subject.get_store(store_id) }.to raise_error(OpenFga::ApiError)
+        expect { subject.get_store }.to raise_error(OpenFga::ApiError)
       end
     end
 
@@ -622,12 +614,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'should raise an error if store_id is missing' do
-          expect { subject.read_changes({}, store_id: nil) }.to raise_error(MissingStoreIdError)
-        end
-
-        it 'should not raise an error if the store_id is given as client config' do
-          client = OpenFga::SdkClient.new(api_url:, store_id:)
-          expect { client.read_changes }.not_to raise_error
+          expect { subject_no_store.read_changes({}, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
       end
 
@@ -702,7 +689,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'should raise an error if store_id is missing' do
-          expect { subject.read(read_request, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.read(read_request) }.to raise_error(MissingStoreIdError)
         end
       end
 

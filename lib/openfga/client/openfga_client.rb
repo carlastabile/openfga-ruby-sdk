@@ -39,8 +39,8 @@ module OpenFga
     # @param store_id [String]
     # @param [Hash] opts the optional parameters
     # @return [GetStoreResponse]
-    def get_store(store_id, opts = {})
-      @api_client.get_store(store_id, opts)
+    def get_store(opts = {})
+      @api_client.get_store(store_id(opts), opts)
     end
 
     # List all stores
