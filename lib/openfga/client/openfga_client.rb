@@ -30,7 +30,7 @@ module OpenFga
     # @param store_id [String]
     # @param [Hash] opts the optional parameters
     # @return [nil]
-    def delete_store(store_id, opts = {})
+    def delete_store(opts = {})
       @api_client.delete_store(store_id, opts)
     end
 

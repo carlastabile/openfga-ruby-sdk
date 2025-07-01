@@ -489,11 +489,11 @@ describe OpenFga::SdkClient do
         stub_request_with_response(method: :delete,
                                    path: stores_url(store_id),
                                    status: 204)
-        expect(subject.delete_store(store_id)).to be_nil
+        expect(subject.delete_store).to be_nil
       end
 
       it 'should raise an error id no store_id is set' do
-        expect { subject_no_store.delete_store(nil) }.to raise_error(ArgumentError)
+        expect { subject_no_store.delete_store }.to raise_error(MissingStoreIdError)
       end
 
       it 'should raise an error ' do
@@ -502,7 +502,7 @@ describe OpenFga::SdkClient do
                                    status: 400,
                                    response_body: { code: 'validation_error',
                                                     message: 'Generic validation error' })
-        expect { subject.delete_store(store_id) }.to raise_error(OpenFga::ApiError)
+        expect { subject.delete_store }.to raise_error(OpenFga::ApiError)
       end
     end
 
