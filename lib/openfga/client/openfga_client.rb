@@ -27,7 +27,6 @@ module OpenFga
 
     # Delete a store
     # Delete an OpenFGA store. This does not delete the data associated with the store, like tuples or authorization models.
-    # @param store_id [String]
     # @param [Hash] opts the optional parameters
     # @return [nil]
     def delete_store(opts = {})
@@ -36,7 +35,6 @@ module OpenFga
 
     # Get a store
     # Returns an OpenFGA store by its identifier
-    # @param store_id [String]
     # @param [Hash] opts the optional parameters
     # @return [GetStoreResponse]
     def get_store(opts = {})
@@ -56,7 +54,6 @@ module OpenFga
     # Writes an authorization model
     # Creates or updates an authorization model for a specific store.
     #
-    # @param store_id [String] The ID of the store where the authorization model will be written.
     # @param body [WriteAuthorizationModelRequest] The request body containing the authorization model details.
     # @param opts [Hash] Optional parameters for the request.
     # @return [WriteAuthorizationModelResponse] The response from the API after writing the authorization model.
@@ -66,7 +63,6 @@ module OpenFga
 
     # Reads an authorization model
     # Retrieves a specific authorization model by its ID from a given store.
-    # @param store_id [String] The ID of the store from which to read the authorization model.
     # @param id [String] The ID of the authorization model to read.
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` or `id` is not provided.
@@ -77,7 +73,6 @@ module OpenFga
 
     # Reads all authorization models
     # Retrieves all authorization models for a specific store.
-    # @param store_id [String] The ID of the store from which to read the authorization models.
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` is not provided.
     # @return [ReadAuthorizationModelsResponse] The response containing the list of authorization models.
@@ -87,7 +82,6 @@ module OpenFga
 
     # Checks whether a specific relationship exists in the store.
     #
-    # @param store_id [String] The ID of the store where the check is performed.
     # @param user [String] The user involved in the relationship.
     # @param relation [String, Symbol] The relation to check (e.g., "reader", "owner").
     # @param object [String] The object involved in the relationship.
