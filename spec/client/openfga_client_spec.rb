@@ -3,7 +3,8 @@ require 'spec_helper'
 describe OpenFga::SdkClient do
   let(:api_url) { 'http://localhost:8090' }
   let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
-  let(:subject) { OpenFga::SdkClient.new(api_url:) }
+  let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
+  let(:subject_no_store) { OpenFga::SdkClient.new(api_url:) }
 
   def store_path(store_id)
     "/stores/#{store_id}"
@@ -250,8 +251,6 @@ describe OpenFga::SdkClient do
     end
 
   describe 'Relationship Queries' do
-    let(:subject) { OpenFga::SdkClient.new(api_url:) }
-
     # unit tests for batch_check
     # Send a list of &#x60;check&#x60; operations in a single request
     # The &#x60;BatchCheck&#x60; API functions nearly identically to &#x60;Check&#x60;, but instead of checking a single user-object relationship BatchCheck accepts a list of relationships to check and returns a map containing &#x60;BatchCheckItem&#x60; response for each check it received.  An associated &#x60;correlation_id&#x60; is required for each check in the batch. This ID is used to correlate a check to the appropriate response. It is a string consisting of only alphanumeric characters or hyphens with a maximum length of 36 characters. This &#x60;correlation_id&#x60; is used to map the result of each check to the item which was checked, so it must be unique for each item in the batch. We recommend using a UUID or ULID as the &#x60;correlation_id&#x60;, but you can use whatever unique identifier you need as long  as it matches this regex pattern: &#x60;^[\\w\\d-]{1,36}$&#x60;  For more details on how &#x60;Check&#x60; functions, see the docs for &#x60;/check&#x60;.  ### Examples #### A BatchCheckRequest &#x60;&#x60;&#x60;json {   \&quot;checks\&quot;: [      {        \&quot;tuple_key\&quot;: {          \&quot;object\&quot;: \&quot;document:2021-budget\&quot;          \&quot;relation\&quot;: \&quot;reader\&quot;,          \&quot;user\&quot;: \&quot;user:anne\&quot;,        },        \&quot;contextual_tuples\&quot;: {...}        \&quot;context\&quot;: {}        \&quot;correlation_id\&quot;: \&quot;01JA8PM3QM7VBPGB8KMPK8SBD5\&quot;      },      {        \&quot;tuple_key\&quot;: {          \&quot;object\&quot;: \&quot;document:2021-budget\&quot;          \&quot;relation\&quot;: \&quot;reader\&quot;,          \&quot;user\&quot;: \&quot;user:bob\&quot;,        },        \&quot;contextual_tuples\&quot;: {...}        \&quot;context\&quot;: {}        \&quot;correlation_id\&quot;: \&quot;01JA8PMM6A90NV5ET0F28CYSZQ\&quot;      }    ] } &#x60;&#x60;&#x60;  Below is a possible response to the above request. Note that the result map&#39;s keys are the &#x60;correlation_id&#x60; values from the checked items in the request: &#x60;&#x60;&#x60;json {    \&quot;result\&quot;: {      \&quot;01JA8PMM6A90NV5ET0F28CYSZQ\&quot;: {        \&quot;allowed\&quot;: false,         \&quot;error\&quot;: {\&quot;message\&quot;: \&quot;\&quot;}      },      \&quot;01JA8PM3QM7VBPGB8KMPK8SBD5\&quot;: {        \&quot;allowed\&quot;: true,         \&quot;error\&quot;: {\&quot;message\&quot;: \&quot;\&quot;}      } } &#x60;&#x60;&#x60;
@@ -408,6 +407,7 @@ describe OpenFga::SdkClient do
       end
 
     end
+
     # unit tests for expand
     # Expand all relationships in userset tree format, and following userset rewrite rules.  Useful to reason about and debug a certain relationship
     # The Expand API will return all users and usersets that have certain relationship with an object in a certain store. This is different from the &#x60;/stores/{store_id}/read&#x60; API in that both users and computed usersets are returned. Body parameters &#x60;tuple_key.object&#x60; and &#x60;tuple_key.relation&#x60; are all required. A &#x60;contextual_tuples&#x60; object may also be included in the body of the request. This object contains one field &#x60;tuple_keys&#x60;, which is an array of tuple keys. Each of these tuples may have an associated &#x60;condition&#x60;. The response will return a tree whose leaves are the specific users and usersets. Union, intersection and difference operator are located in the intermediate nodes.  ## Example To expand all users that have the &#x60;reader&#x60; relationship with object &#x60;document:2021-budget&#x60;, use the Expand API with the following request body &#x60;&#x60;&#x60;json {   \&quot;tuple_key\&quot;: {     \&quot;object\&quot;: \&quot;document:2021-budget\&quot;,     \&quot;relation\&quot;: \&quot;reader\&quot;   },   \&quot;authorization_model_id\&quot;: \&quot;01G50QVV17PECNVAHX1GG4Y5NC\&quot; } &#x60;&#x60;&#x60; OpenFGA&#39;s response will be a userset tree of the users and usersets that have read access to the document. &#x60;&#x60;&#x60;json {   \&quot;tree\&quot;:{     \&quot;root\&quot;:{       \&quot;type\&quot;:\&quot;document:2021-budget#reader\&quot;,       \&quot;union\&quot;:{         \&quot;nodes\&quot;:[           {             \&quot;type\&quot;:\&quot;document:2021-budget#reader\&quot;,             \&quot;leaf\&quot;:{               \&quot;users\&quot;:{                 \&quot;users\&quot;:[                   \&quot;user:bob\&quot;                 ]               }             }           },           {             \&quot;type\&quot;:\&quot;document:2021-budget#reader\&quot;,             \&quot;leaf\&quot;:{               \&quot;computed\&quot;:{                 \&quot;userset\&quot;:\&quot;document:2021-budget#writer\&quot;               }             }           }         ]       }     }   } } &#x60;&#x60;&#x60; The caller can then call expand API for the &#x60;writer&#x60; relationship for the &#x60;document:2021-budget&#x60;. ### Expand Request with Contextual Tuples  Given the model &#x60;&#x60;&#x60;python model     schema 1.1  type user  type folder     relations         define owner: [user]  type document     relations         define parent: [folder]         define viewer: [user] or writer         define writer: [user] or owner from parent &#x60;&#x60;&#x60; and the initial tuples &#x60;&#x60;&#x60;json [{     \&quot;user\&quot;: \&quot;user:bob\&quot;,     \&quot;relation\&quot;: \&quot;owner\&quot;,     \&quot;object\&quot;: \&quot;folder:1\&quot; }] &#x60;&#x60;&#x60;  To expand all &#x60;writers&#x60; of &#x60;document:1&#x60; when &#x60;document:1&#x60; is put in &#x60;folder:1&#x60;, the first call could be  &#x60;&#x60;&#x60;json {   \&quot;tuple_key\&quot;: {     \&quot;object\&quot;: \&quot;document:1\&quot;,     \&quot;relation\&quot;: \&quot;writer\&quot;   },   \&quot;contextual_tuples\&quot;: {     \&quot;tuple_keys\&quot;: [       {         \&quot;user\&quot;: \&quot;folder:1\&quot;,         \&quot;relation\&quot;: \&quot;parent\&quot;,         \&quot;object\&quot;: \&quot;document:1\&quot;       }     ]   } } &#x60;&#x60;&#x60; this returns: &#x60;&#x60;&#x60;json {   \&quot;tree\&quot;: {     \&quot;root\&quot;: {       \&quot;name\&quot;: \&quot;document:1#writer\&quot;,       \&quot;union\&quot;: {         \&quot;nodes\&quot;: [           {             \&quot;name\&quot;: \&quot;document:1#writer\&quot;,             \&quot;leaf\&quot;: {               \&quot;users\&quot;: {                 \&quot;users\&quot;: []               }             }           },           {             \&quot;name\&quot;: \&quot;document:1#writer\&quot;,             \&quot;leaf\&quot;: {               \&quot;tupleToUserset\&quot;: {                 \&quot;tupleset\&quot;: \&quot;document:1#parent\&quot;,                 \&quot;computed\&quot;: [                   {                     \&quot;userset\&quot;: \&quot;folder:1#owner\&quot;                   }                 ]               }             }           }         ]       }     }   } } &#x60;&#x60;&#x60; This tells us that the &#x60;owner&#x60; of &#x60;folder:1&#x60; may also be a writer. So our next call could be to find the &#x60;owners&#x60; of &#x60;folder:1&#x60; &#x60;&#x60;&#x60;json {   \&quot;tuple_key\&quot;: {     \&quot;object\&quot;: \&quot;folder:1\&quot;,     \&quot;relation\&quot;: \&quot;owner\&quot;   } } &#x60;&#x60;&#x60; which gives &#x60;&#x60;&#x60;json {   \&quot;tree\&quot;: {     \&quot;root\&quot;: {       \&quot;name\&quot;: \&quot;folder:1#owner\&quot;,       \&quot;leaf\&quot;: {         \&quot;users\&quot;: {           \&quot;users\&quot;: [             \&quot;user:bob\&quot;           ]         }       }     }   } } &#x60;&#x60;&#x60;
@@ -415,38 +415,145 @@ describe OpenFga::SdkClient do
     # @param body
     # @param [Hash] opts the optional parameters
     # @return [ExpandResponse]
-    describe 'expand test' do
-      it 'should work' do
-        # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    context 'when running expand' do
+      let(:relation) { 'reader' }
+      let(:object) { 'document:2021-budget' }
+      let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
+      let(:contextual_tuples) do
+        {
+          tuple_keys: [
+            {
+              user: 'user:anne',
+              relation: 'writer',
+              object: 'document:2021-budget'
+            }
+          ]
+        }
       end
-    end
 
-    # unit tests for list_objects
-    # List all objects of the given type that the user has a relation with
-    # The ListObjects API returns a list of all the objects of the given type that the user has a relation with.  To arrive at a result, the API uses: an authorization model, explicit tuples written through the Write API, contextual tuples present in the request, and implicit tuples that exist by virtue of applying set theory (such as &#x60;document:2021-budget#viewer@document:2021-budget#viewer&#x60;; the set of users who are viewers of &#x60;document:2021-budget&#x60; are the set of users who are the viewers of &#x60;document:2021-budget&#x60;). An &#x60;authorization_model_id&#x60; may be specified in the body. If it is not specified, the latest authorization model ID will be used. It is strongly recommended to specify authorization model id for better performance. You may also specify &#x60;contextual_tuples&#x60; that will be treated as regular tuples. Each of these tuples may have an associated &#x60;condition&#x60;. You may also provide a &#x60;context&#x60; object that will be used to evaluate the conditioned tuples in the system. It is strongly recommended to provide a value for all the input parameters of all the conditions, to ensure that all tuples be evaluated correctly. By default, the Check API caches results for a short time to optimize performance. You may specify a value of &#x60;HIGHER_CONSISTENCY&#x60; for the optional &#x60;consistency&#x60; parameter in the body to inform the server that higher conisistency is preferred at the expense of increased latency. Consideration should be given to the increased latency if requesting higher consistency. The response will contain the related objects in an array in the \&quot;objects\&quot; field of the response and they will be strings in the object format &#x60;&lt;type&gt;:&lt;id&gt;&#x60; (e.g. \&quot;document:roadmap\&quot;). The number of objects in the response array will be limited by the execution timeout specified in the flag OPENFGA_LIST_OBJECTS_DEADLINE and by the upper bound specified in the flag OPENFGA_LIST_OBJECTS_MAX_RESULTS, whichever is hit first. The objects given will not be sorted, and therefore two identical calls can give a given different set of objects.
-    # @param store_id
-    # @param body
-    # @param [Hash] opts the optional parameters
-    # @return [ListObjectsResponse]
-    describe 'list_objects test' do
-      it 'should work' do
-        # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+      it 'expands relationships successfully' do
+        stub_request_with_response(method: :post,
+                                   path: "#{stores_url(store_id)}/expand",
+                                   status: 200,
+                                   request_body: {
+                                     tuple_key: {
+                                       relation:,
+                                       object:
+                                     },
+                                     authorization_model_id:,
+                                     consistency: 'UNSPECIFIED'
+                                   },
+                                   response_body: {
+                                     tree: {
+                                       root: {
+                                         name: 'document:2021-budget#reader',
+                                         union: {
+                                           nodes: [
+                                             {
+                                               name: 'document:2021-budget#reader',
+                                               leaf: {
+                                                 users: {
+                                                   users: ['user:bob']
+                                                 }
+                                               }
+                                             },
+                                             {
+                                               name: 'document:2021-budget#reader',
+                                               leaf: {
+                                                 computed: {
+                                                   userset: 'document:2021-budget#writer'
+                                                 }
+                                               }
+                                             }
+                                           ]
+                                         }
+                                       }
+                                     }
+                                   })
+
+        response = subject.expand(relation:, object:, opts: { authorization_model_id: })
+        expect(response).to be_a(OpenFga::ExpandResponse)
+        expect(response.tree.root.name).to eq('document:2021-budget#reader')
+        expect(response.tree.root.union.nodes.size).to eq(2)
       end
-    end
 
-    # unit tests for list_users
-    # List the users matching the provided filter who have a certain relation to a particular type.
-    # The ListUsers API returns a list of all the users of a specific type that have a relation to a given object.  To arrive at a result, the API uses: an authorization model, explicit tuples written through the Write API, contextual tuples present in the request, and implicit tuples that exist by virtue of applying set theory (such as &#x60;document:2021-budget#viewer@document:2021-budget#viewer&#x60;; the set of users who are viewers of &#x60;document:2021-budget&#x60; are the set of users who are the viewers of &#x60;document:2021-budget&#x60;). An &#x60;authorization_model_id&#x60; may be specified in the body. If it is not specified, the latest authorization model ID will be used. It is strongly recommended to specify authorization model id for better performance. You may also specify &#x60;contextual_tuples&#x60; that will be treated as regular tuples. Each of these tuples may have an associated &#x60;condition&#x60;. You may also provide a &#x60;context&#x60; object that will be used to evaluate the conditioned tuples in the system. It is strongly recommended to provide a value for all the input parameters of all the conditions, to ensure that all tuples be evaluated correctly. The response will contain the related users in an array in the \&quot;users\&quot; field of the response. These results may include specific objects, usersets  or type-bound public access. Each of these types of results is encoded in its own type and not represented as a string.In cases where a type-bound public access result is returned (e.g. &#x60;user:*&#x60;), it cannot be inferred that all subjects of that type have a relation to the object; it is possible that negations exist and checks should still be queried on individual subjects to ensure access to that document.The number of users in the response array will be limited by the execution timeout specified in the flag OPENFGA_LIST_USERS_DEADLINE and by the upper bound specified in the flag OPENFGA_LIST_USERS_MAX_RESULTS, whichever is hit first. The returned users will not be sorted, and therefore two identical calls may yield different sets of users.
-    # @param store_id
-    # @param body
-    # @param [Hash] opts the optional parameters
-    # @return [ListUsersResponse]
-    describe 'list_users test' do
-      it 'should work' do
-        # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+      it 'raises an error if store_id is missing' do
+        expect { subject_no_store.expand(relation:, object:) }.to raise_error(MissingStoreIdError)
+      end
+
+      it 'raises an error if relation is missing' do
+        expect { subject.expand(relation: nil, object:) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if object is missing' do
+        expect { subject.expand(relation:, object: nil) }.to raise_error(ArgumentError)
+      end
+
+      it 'expands relationships with contextual tuples' do
+        stub_request_with_response(method: :post,
+                                   path: "#{stores_url(store_id)}/expand",
+                                   status: 200,
+                                   request_body: {
+                                     tuple_key: {
+                                       relation:,
+                                       object:
+                                     },
+                                     contextual_tuples:,
+                                     authorization_model_id:,
+                                     consistency: 'UNSPECIFIED'
+                                   },
+                                   response_body: {
+                                     tree: {
+                                       root: {
+                                         name: 'document:2021-budget#writer',
+                                         leaf: {
+                                           tupleToUserset: {
+                                             tupleset: 'document:2021-budget#parent',
+                                             computed: [
+                                               {
+                                                 userset: 'folder:1#owner'
+                                               }
+                                             ]
+                                           }
+                                         }
+                                       }
+                                     }
+                                   })
+
+        response = subject.expand(relation:, object:, opts: { contextual_tuples:, authorization_model_id: })
+        expect(response).to be_a(OpenFga::ExpandResponse)
+        expect(response.tree.root.name).to eq('document:2021-budget#writer')
+      end
+
+      # unit tests for list_objects
+      # List all objects of the given type that the user has a relation with
+      # The ListObjects API returns a list of all the objects of the given type that the user has a relation with.  To arrive at a result, the API uses: an authorization model, explicit tuples written through the Write API, contextual tuples present in the request, and implicit tuples that exist by virtue of applying set theory (such as &#x60;document:2021-budget#viewer@document:2021-budget#viewer&#x60;; the set of users who are viewers of &#x60;document:2021-budget&#x60; are the set of users who are the viewers of &#x60;document:2021-budget&#x60;). An &#x60;authorization_model_id&#x60; may be specified in the body. If it is not specified, the latest authorization model ID will be used. It is strongly recommended to specify authorization model id for better performance. You may also specify &#x60;contextual_tuples&#x60; that will be treated as regular tuples. Each of these tuples may have an associated &#x60;condition&#x60;. You may also provide a &#x60;context&#x60; object that will be used to evaluate the conditioned tuples in the system. It is strongly recommended to provide a value for all the input parameters of all the conditions, to ensure that all tuples be evaluated correctly. By default, the Check API caches results for a short time to optimize performance. You may specify a value of &#x60;HIGHER_CONSISTENCY&#x60; for the optional &#x60;consistency&#x60; parameter in the body to inform the server that higher conisistency is preferred at the expense of increased latency. Consideration should be given to the increased latency if requesting higher consistency. The response will contain the related objects in an array in the \&quot;objects\&quot; field of the response and they will be strings in the object format &#x60;&lt;type&gt;:&lt;id&gt;&#x60; (e.g. \&quot;document:roadmap\&quot;). The number of objects in the response array will be limited by the execution timeout specified in the flag OPENFGA_LIST_OBJECTS_DEADLINE and by the upper bound specified in the flag OPENFGA_LIST_OBJECTS_MAX_RESULTS, whichever is hit first. The objects given will not be sorted, and therefore two identical calls can give a given different set of objects.
+      # @param store_id
+      # @param body
+      # @param [Hash] opts the optional parameters
+      # @return [ListObjectsResponse]
+      describe 'list_objects test' do
+        it 'should work' do
+          # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+        end
+      end
+
+      # unit tests for list_users
+      # List the users matching the provided filter who have a certain relation to a particular type.
+      # The ListUsers API returns a list of all the users of a specific type that have a relation to a given object.  To arrive at a result, the API uses: an authorization model, explicit tuples written through the Write API, contextual tuples present in the request, and implicit tuples that exist by virtue of applying set theory (such as &#x60;document:2021-budget#viewer@document:2021-budget#viewer&#x60;; the set of users who are viewers of &#x60;document:2021-budget&#x60; are the set of users who are the viewers of &#x60;document:2021-budget&#x60;). An &#x60;authorization_model_id&#x60; may be specified in the body. If it is not specified, the latest authorization model ID will be used. It is strongly recommended to specify authorization model id for better performance. You may also specify &#x60;contextual_tuples&#x60; that will be treated as regular tuples. Each of these tuples may have an associated &#x60;condition&#x60;. You may also provide a &#x60;context&#x60; object that will be used to evaluate the conditioned tuples in the system. It is strongly recommended to provide a value for all the input parameters of all the conditions, to ensure that all tuples be evaluated correctly. The response will contain the related users in an array in the \&quot;users\&quot; field of the response. These results may include specific objects, usersets  or type-bound public access. Each of these types of results is encoded in its own type and not represented as a string.In cases where a type-bound public access result is returned (e.g. &#x60;user:*&#x60;), it cannot be inferred that all subjects of that type have a relation to the object; it is possible that negations exist and checks should still be queried on individual subjects to ensure access to that document.The number of users in the response array will be limited by the execution timeout specified in the flag OPENFGA_LIST_USERS_DEADLINE and by the upper bound specified in the flag OPENFGA_LIST_USERS_MAX_RESULTS, whichever is hit first. The returned users will not be sorted, and therefore two identical calls may yield different sets of users.
+      # @param store_id
+      # @param body
+      # @param [Hash] opts the optional parameters
+      # @return [ListUsersResponse]
+      describe 'list_users test' do
+        it 'should work' do
+          # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+        end
       end
     end
   end
+
+
 
   describe 'Stores' do
     let(:subject) { OpenFga::SdkClient.new(api_url:) }
@@ -573,6 +680,7 @@ describe OpenFga::SdkClient do
       end
     end
   end
+
 
   describe 'Tuples' do
     describe 'when reading changes' do

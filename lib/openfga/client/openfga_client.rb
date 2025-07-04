@@ -190,6 +190,34 @@ module OpenFga
       @api_client.read(store_id(opts), request_body, opts)
     end
 
+    # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the object.
+    #
+    # @param store_id [String] The ID of the store where the relationship tuple exists.
+    # @param tuple_key [Hash] The tuple key containing the `user`, `relation`, and `object` to expand.
+    # @param opts [Hash] Optional parameters for the request.
+    #   @option opts [String] :authorization_model_id The ID of the authorization model to use for the expansion.
+    #   @option opts [Hash] :contextual_tuples Additional contextual tuples to include in the expansion.
+    #   @option opts [String] :consistency The consistency level for the expansion (e.g., "FULL", "EVENTUAL").
+    #
+    # @raise [ArgumentError] If the `tuple_key` is missing or invalid.
+    #
+    # @return [ExpandResponse] The response containing the expanded relationship tuples.
+    def expand(relation:, object:, opts: {})
+      fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
+      fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
+
+      # Build the request body
+      request_body = ExpandRequest.new(
+        tuple_key: ExpandRequestTupleKey.new(relation:, object:),
+        authorization_model_id: opts[:authorization_model_id],
+        contextual_tuples: opts[:contextual_tuples],
+        consistency: opts[:consistency] || 'UNSPECIFIED'
+      )
+
+      # Call the API client to perform the expansion
+      @api_client.expand(store_id(opts), request_body, opts)
+    end
+
     private
       # Returns the store ID from the options or configuration.
       # Raises MissingStoreIdError if the store ID is not provided.
