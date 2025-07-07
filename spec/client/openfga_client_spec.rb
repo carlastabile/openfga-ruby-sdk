@@ -727,13 +727,12 @@ describe OpenFga::SdkClient do
 
     describe 'the write endpoint' do
       describe 'when writing tuples' do
-        let(:writes) { { writes: {
-          tuple_keys: [{
+        let(:writes) { { tuple_keys: [{
             user: 'user:1',
             relation: 'member',
             object: 'group:1'
           }]
-        } }}
+        } }
 
         it 'should successfully make the request' do
           expected_request = {
@@ -787,18 +786,20 @@ describe OpenFga::SdkClient do
       end
 
       describe 'when deleting tuples' do
-        let(:expected_request) { {
-          deletes: {
+        let(:deletes) { {
             tuple_keys: [{
               user: 'user:1',
               relation: 'member',
               object: 'group:1'
             }]
-          },
-          authorization_model_id:
         }}
 
         it 'should successfully make the request' do
+          expected_request = {
+              deletes:,
+              authorization_model_id:
+          }
+
           opts = {
             authorization_model_id:,
             store_id:
@@ -812,16 +813,35 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
           
-          subject.write({
-            deletes: {
-              tuple_keys: [{
-                user: 'user:1',
-                relation: 'member',
-                object: 'group:1'
-              }]
-            } }, opts)
+          subject.write({ deletes: }, opts)
 
           expect(stub).to have_been_requested
+        end
+
+        it 'does not send authorization_model_id if not specified' do
+          expected_request = {
+            deletes:
+          }
+
+          opts = {
+            store_id:
+          }
+
+          stub = stub_request_with_response(
+            path: "#{stores_url(store_id)}/write",
+            method: :post,
+            status: 200,
+            request_body: expected_request,
+            response_body: {},
+          )
+          
+          subject.write({ deletes: }, opts)
+
+          expect(stub).to have_been_requested
+        end
+
+        it 'throws an error if store_id is not specified' do
+          expect { subject.write({ deletes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
       end
 
