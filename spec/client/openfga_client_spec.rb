@@ -4,6 +4,7 @@ describe OpenFga::SdkClient do
   let(:api_url) { 'http://localhost:8090' }
   let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
   let(:subject) { OpenFga::SdkClient.new(api_url:) }
+  let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
 
   def store_path(store_id)
     "/stores/#{store_id}"
@@ -151,7 +152,6 @@ describe OpenFga::SdkClient do
   end
 
   describe 'Assertions' do
-      let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
       let(:assertions) do
         [
           {
@@ -722,6 +722,45 @@ describe OpenFga::SdkClient do
           subject.read(read_request, opts)
           expect(stub).to have_been_requested
         end
+      end
+    end
+
+    describe 'when writing tuples' do
+      let(:expected_request) { {
+        writes: {
+          tuple_keys: [{
+            user: 'user:1',
+            relation: 'member',
+            object: 'group:1'
+          }]
+        },
+        authorization_model_id:
+      }}
+
+      it 'should successfully make the request' do
+        opts = {
+          authorization_model_id:,
+          store_id:
+        }
+
+        stub = stub_request_with_response(
+          path: "#{stores_url(store_id)}/write",
+          method: :post,
+          status: 200,
+          request_body: expected_request,
+          response_body: {},
+        )
+        
+        subject.write({
+          writes: {
+            tuple_keys: [{
+              user: 'user:1',
+              relation: 'member',
+              object: 'group:1'
+            }]
+          } }, opts)
+
+        expect(stub).to have_been_requested
       end
     end
   end
