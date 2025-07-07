@@ -725,42 +725,83 @@ describe OpenFga::SdkClient do
       end
     end
 
-    describe 'when writing tuples' do
-      let(:expected_request) { {
-        writes: {
-          tuple_keys: [{
-            user: 'user:1',
-            relation: 'member',
-            object: 'group:1'
-          }]
-        },
-        authorization_model_id:
-      }}
-
-      it 'should successfully make the request' do
-        opts = {
-          authorization_model_id:,
-          store_id:
-        }
-
-        stub = stub_request_with_response(
-          path: "#{stores_url(store_id)}/write",
-          method: :post,
-          status: 200,
-          request_body: expected_request,
-          response_body: {},
-        )
-        
-        subject.write({
+    describe 'the write endpoint' do
+      describe 'when writing tuples' do
+        let(:expected_request) { {
           writes: {
             tuple_keys: [{
               user: 'user:1',
               relation: 'member',
               object: 'group:1'
             }]
-          } }, opts)
+          },
+          authorization_model_id:
+        }}
 
-        expect(stub).to have_been_requested
+        it 'should successfully make the request' do
+          opts = {
+            authorization_model_id:,
+            store_id:
+          }
+
+          stub = stub_request_with_response(
+            path: "#{stores_url(store_id)}/write",
+            method: :post,
+            status: 200,
+            request_body: expected_request,
+            response_body: {},
+          )
+          
+          subject.write({
+            writes: {
+              tuple_keys: [{
+                user: 'user:1',
+                relation: 'member',
+                object: 'group:1'
+              }]
+            } }, opts)
+
+          expect(stub).to have_been_requested
+        end
+      end
+
+      describe 'when deleting tuples' do
+        let(:expected_request) { {
+          deletes: {
+            tuple_keys: [{
+              user: 'user:1',
+              relation: 'member',
+              object: 'group:1'
+            }]
+          },
+          authorization_model_id:
+        }}
+
+        it 'should successfully make the request' do
+          opts = {
+            authorization_model_id:,
+            store_id:
+          }
+
+          stub = stub_request_with_response(
+            path: "#{stores_url(store_id)}/write",
+            method: :post,
+            status: 200,
+            request_body: expected_request,
+            response_body: {},
+          )
+          
+          subject.write({
+            deletes: {
+              tuple_keys: [{
+                user: 'user:1',
+                relation: 'member',
+                object: 'group:1'
+              }]
+            } }, opts)
+
+          expect(stub).to have_been_requested
+        end
       end
     end
   end
