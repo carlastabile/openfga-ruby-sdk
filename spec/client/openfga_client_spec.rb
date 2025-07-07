@@ -727,18 +727,20 @@ describe OpenFga::SdkClient do
 
     describe 'the write endpoint' do
       describe 'when writing tuples' do
-        let(:expected_request) { {
-          writes: {
-            tuple_keys: [{
-              user: 'user:1',
-              relation: 'member',
-              object: 'group:1'
-            }]
-          },
-          authorization_model_id:
-        }}
+        let(:writes) { { writes: {
+          tuple_keys: [{
+            user: 'user:1',
+            relation: 'member',
+            object: 'group:1'
+          }]
+        } }}
 
         it 'should successfully make the request' do
+          expected_request = {
+            writes:,
+            authorization_model_id:
+          }
+
           opts = {
             authorization_model_id:,
             store_id:
@@ -752,16 +754,35 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
           
-          subject.write({
-            writes: {
-              tuple_keys: [{
-                user: 'user:1',
-                relation: 'member',
-                object: 'group:1'
-              }]
-            } }, opts)
+          subject.write({ writes: }, opts)
 
           expect(stub).to have_been_requested
+        end
+
+        it 'does not send authorization_model_id if not specified' do
+          expected_request = {
+            writes:
+          }
+
+          opts = {
+            store_id:
+          }
+
+          stub = stub_request_with_response(
+            path: "#{stores_url(store_id)}/write",
+            method: :post,
+            status: 200,
+            request_body: expected_request,
+            response_body: {},
+          )
+          
+          subject.write({ writes: }, opts)
+
+          expect(stub).to have_been_requested
+        end
+
+        it 'throws an error if store_id is not specified' do
+          expect { subject.write({ writes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
       end
 
@@ -792,6 +813,59 @@ describe OpenFga::SdkClient do
           )
           
           subject.write({
+            deletes: {
+              tuple_keys: [{
+                user: 'user:1',
+                relation: 'member',
+                object: 'group:1'
+              }]
+            } }, opts)
+
+          expect(stub).to have_been_requested
+        end
+      end
+
+      describe 'when deleting and writing tuples together' do
+        let(:expected_request) { {
+          writes: {
+            tuple_keys: [{
+              user: 'user:2',
+              relation: 'member',
+              object: 'group:2'
+            }]
+          },
+          deletes: {
+            tuple_keys: [{
+              user: 'user:1',
+              relation: 'member',
+              object: 'group:1'
+            }]
+          },
+          authorization_model_id:
+        }}
+
+        it 'should successfully make the request' do
+          opts = {
+            authorization_model_id:,
+            store_id:
+          }
+
+          stub = stub_request_with_response(
+            path: "#{stores_url(store_id)}/write",
+            method: :post,
+            status: 200,
+            request_body: expected_request,
+            response_body: {},
+          )
+          
+          subject.write({
+            writes: {
+              tuple_keys: [{
+                user: 'user:2',
+                relation: 'member',
+                object: 'group:2'
+              }]
+            },
             deletes: {
               tuple_keys: [{
                 user: 'user:1',
