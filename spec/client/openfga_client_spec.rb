@@ -432,7 +432,7 @@ describe OpenFga::SdkClient do
       end
 
       it 'expands relationships successfully' do
-        stub_request_with_response(method: :post,
+        stub = stub_request_with_response(method: :post,
                                    path: "#{stores_url(store_id)}/expand",
                                    status: 200,
                                    request_body: {
@@ -443,35 +443,12 @@ describe OpenFga::SdkClient do
                                      authorization_model_id:,
                                      consistency: 'UNSPECIFIED'
                                    },
-                                   response_body: {
-                                     tree: {
-                                       root: {
-                                         name: 'document:2021-budget#reader',
-                                         union: {
-                                           nodes: [
-                                             {
-                                               name: 'document:2021-budget#reader',
-                                               leaf: {
-                                                 users: {
-                                                   users: ['user:bob']
-                                                 }
-                                               }
-                                             },
-                                             {
-                                               name: 'document:2021-budget#reader',
-                                               leaf: {
-                                                 computed: {
-                                                   userset: 'document:2021-budget#writer'
-                                                 }
-                                               }
-                                             }
-                                           ]
-                                         }
-                                       }
-                                     }
-                                   })
+                                   response_body: load_json("expand_response"))
+
 
         response = subject.expand(relation:, object:, opts: { authorization_model_id: })
+
+        expect(stub).to have_been_requested
         expect(response).to be_a(OpenFga::ExpandResponse)
         expect(response.tree.root.name).to eq('document:2021-budget#reader')
         expect(response.tree.root.union.nodes.size).to eq(2)
@@ -490,7 +467,7 @@ describe OpenFga::SdkClient do
       end
 
       it 'expands relationships with contextual tuples' do
-        stub_request_with_response(method: :post,
+        stub = stub_request_with_response(method: :post,
                                    path: "#{stores_url(store_id)}/expand",
                                    status: 200,
                                    request_body: {
@@ -506,6 +483,8 @@ describe OpenFga::SdkClient do
 
         response = subject.expand(relation: :writer, object: 'document:1',
                                   opts: { contextual_tuples:, authorization_model_id: })
+
+        expect(stub).to have_been_requested
         expect(response).to be_a(OpenFga::ExpandResponse)
         expect(response.tree.root.name).to eq('document:1#writer')
       end
