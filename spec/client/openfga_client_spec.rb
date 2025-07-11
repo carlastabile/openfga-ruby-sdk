@@ -423,9 +423,9 @@ describe OpenFga::SdkClient do
         { tuple_keys:
             [
               {
-                user: "folder:1",
-                relation: "parent",
-                object: "document:1"
+                user: 'folder:1',
+                relation: 'parent',
+                object: 'document:1'
               }
             ]
         }
@@ -495,16 +495,16 @@ describe OpenFga::SdkClient do
                                    status: 200,
                                    request_body: {
                                      tuple_key: {
-                                       relation: "writer",
-                                       object: "document:1"
+                                       relation: 'writer',
+                                       object: 'document:1'
                                      },
                                      authorization_model_id:,
                                      consistency: 'UNSPECIFIED',
                                      contextual_tuples:
                                    },
-                                   response_body: load_json("expand_with_contextual_tuples_response"))
+                                   response_body: load_json('expand_with_contextual_tuples_response'))
 
-        response = subject.expand(relation: :writer, object: "document:1",
+        response = subject.expand(relation: :writer, object: 'document:1',
                                   opts: { contextual_tuples:, authorization_model_id: })
         expect(response).to be_a(OpenFga::ExpandResponse)
         expect(response.tree.root.name).to eq('document:1#writer')
