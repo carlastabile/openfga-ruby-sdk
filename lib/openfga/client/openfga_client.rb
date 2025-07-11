@@ -206,13 +206,18 @@ module OpenFga
       fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
       fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
 
-      # Build the request body
       request_body = ExpandRequest.new(
         tuple_key: ExpandRequestTupleKey.new(relation:, object:),
         authorization_model_id: opts[:authorization_model_id],
-        contextual_tuples: opts[:contextual_tuples],
         consistency: opts[:consistency] || 'UNSPECIFIED'
       )
+
+      # Build the request body
+      if opts.include?(:contextual_tuples)
+        contextual_tuples = opts[:contextual_tuples]
+        tuple_keys = contextual_tuples[:tuple_keys].map { |tuple_key| TupleKey.new(tuple_key) }
+        request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
+      end
 
       # Call the API client to perform the expansion
       @api_client.expand(store_id(opts), request_body, opts)

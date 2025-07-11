@@ -364,7 +364,6 @@ module OpenFga
         auth_names:,
         return_type:
       )
-
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: OpenFgaApi#expand\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"

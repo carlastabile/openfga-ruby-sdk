@@ -35,7 +35,7 @@ describe OpenFga::SdkClient do
     let(:store_id) { 'JHGFD' }
 
     context 'when writing an authorization model' do
-      let(:valid_body) { load_json('write_authorization_model', body: true) }
+      let(:valid_body) { load_json('write_authorization_model_body') }
       let(:invalid_body) { { type_definitions: [] } }
       let(:store_id) { 'KJHGFDSUYTREW543GF' }
 
@@ -88,7 +88,7 @@ describe OpenFga::SdkClient do
 
     context 'when reading an authorization model' do
       let(:model_id) { '01G5JAVJ41T49E9TT3SKVS7X1J' }
-      let(:valid_response) { load_json('read_authorization_model') }
+      let(:valid_response) { load_json('read_authorization_model_response') }
       # unit tests for read_authorization_model
       # Return a particular version of an authorization model
       # The ReadAuthorizationModel API returns an authorization model by its identifier. The response will return the authorization model for the particular version.  ## Example To retrieve the authorization model with ID &#x60;01G5JAVJ41T49E9TT3SKVS7X1J&#x60; for the store, call the GET authorization-models by ID API with &#x60;01G5JAVJ41T49E9TT3SKVS7X1J&#x60; as the &#x60;id&#x60; path parameter.  The API will return: &#x60;&#x60;&#x60;json {   \&quot;authorization_model\&quot;:{     \&quot;id\&quot;:\&quot;01G5JAVJ41T49E9TT3SKVS7X1J\&quot;,     \&quot;type_definitions\&quot;:[       {         \&quot;type\&quot;:\&quot;user\&quot;       },       {         \&quot;type\&quot;:\&quot;document\&quot;,         \&quot;relations\&quot;:{           \&quot;reader\&quot;:{             \&quot;union\&quot;:{               \&quot;child\&quot;:[                 {                   \&quot;this\&quot;:{}                 },                 {                   \&quot;computedUserset\&quot;:{                     \&quot;object\&quot;:\&quot;\&quot;,                     \&quot;relation\&quot;:\&quot;writer\&quot;                   }                 }               ]             }           },           \&quot;writer\&quot;:{             \&quot;this\&quot;:{}           }         }       }     ]   } } &#x60;&#x60;&#x60; In the above example, there are 2 types (&#x60;user&#x60; and &#x60;document&#x60;). The &#x60;document&#x60; type has 2 relations (&#x60;writer&#x60; and &#x60;reader&#x60;).
@@ -128,7 +128,7 @@ describe OpenFga::SdkClient do
     end
 
     context 'when listing authorization models' do
-      let(:valid_response) { load_json('read_authorization_models') }
+      let(:valid_response) { load_json('read_authorization_models_response') }
       it 'returns authorization models successfully' do
         stub_request_with_response(method: :get,
                                    path: "#{stores_url(store_id)}/authorization-models",
@@ -198,7 +198,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'raises an error if store_id is missing' do
-          expect { subject.read_assertions(store_id: nil, authorization_model_id:) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.read_assertions(store_id: nil, authorization_model_id:) }.to raise_error(MissingStoreIdError)
         end
 
         it 'raises an error if model_id is missing' do
@@ -420,14 +420,14 @@ describe OpenFga::SdkClient do
       let(:object) { 'document:2021-budget' }
       let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
       let(:contextual_tuples) do
-        {
-          tuple_keys: [
-            {
-              user: 'user:anne',
-              relation: 'writer',
-              object: 'document:2021-budget'
-            }
-          ]
+        { tuple_keys:
+            [
+              {
+                user: "folder:1",
+                relation: "parent",
+                object: "document:1"
+              }
+            ]
         }
       end
 
@@ -495,34 +495,19 @@ describe OpenFga::SdkClient do
                                    status: 200,
                                    request_body: {
                                      tuple_key: {
-                                       relation:,
-                                       object:
+                                       relation: "writer",
+                                       object: "document:1"
                                      },
-                                     contextual_tuples:,
                                      authorization_model_id:,
-                                     consistency: 'UNSPECIFIED'
+                                     consistency: 'UNSPECIFIED',
+                                     contextual_tuples:
                                    },
-                                   response_body: {
-                                     tree: {
-                                       root: {
-                                         name: 'document:2021-budget#writer',
-                                         leaf: {
-                                           tupleToUserset: {
-                                             tupleset: 'document:2021-budget#parent',
-                                             computed: [
-                                               {
-                                                 userset: 'folder:1#owner'
-                                               }
-                                             ]
-                                           }
-                                         }
-                                       }
-                                     }
-                                   })
+                                   response_body: load_json("expand_with_contextual_tuples_response"))
 
-        response = subject.expand(relation:, object:, opts: { contextual_tuples:, authorization_model_id: })
+        response = subject.expand(relation: :writer, object: "document:1",
+                                  opts: { contextual_tuples:, authorization_model_id: })
         expect(response).to be_a(OpenFga::ExpandResponse)
-        expect(response.tree.root.name).to eq('document:2021-budget#writer')
+        expect(response.tree.root.name).to eq('document:1#writer')
       end
 
       # unit tests for list_objects
@@ -728,7 +713,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'should raise an error if store_id is missing' do
-          expect { subject.read_changes({}, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.read_changes({}, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
 
         it 'should not raise an error if the store_id is given as client config' do
@@ -808,7 +793,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'should raise an error if store_id is missing' do
-          expect { subject.read(read_request, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.read(read_request, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
       end
 
