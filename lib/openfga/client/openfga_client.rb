@@ -191,15 +191,15 @@ module OpenFga
     end
 
     # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the object.
-    #
-    # @param store_id [String] The ID of the store where the relationship tuple exists.
-    # @param tuple_key [Hash] The tuple key containing the `user`, `relation`, and `object` to expand.
+    # @param relation [String||Symbol] The relation to expand (e.g., "reader", :writer).
+    # @param object [String] The object involved in the relationship.
     # @param opts [Hash] Optional parameters for the request.
+    #   @option opts [String] :store_id The ID of the store where the expansion will be performed.
     #   @option opts [String] :authorization_model_id The ID of the authorization model to use for the expansion.
     #   @option opts [Hash] :contextual_tuples Additional contextual tuples to include in the expansion.
     #   @option opts [String] :consistency The consistency level for the expansion (e.g., "FULL", "EVENTUAL").
     #
-    # @raise [ArgumentError] If the `tuple_key` is missing or invalid.
+    # @raise [ArgumentError] If the `relation` or `object` is missing.
     #
     # @return [ExpandResponse] The response containing the expanded relationship tuples.
     def expand(relation:, object:, opts: {})
