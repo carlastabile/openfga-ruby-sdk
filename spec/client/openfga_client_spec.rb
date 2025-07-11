@@ -443,7 +443,7 @@ describe OpenFga::SdkClient do
                                      authorization_model_id:,
                                      consistency: 'UNSPECIFIED'
                                    },
-                                   response_body: load_json("expand_response"))
+                                   response_body: load_json('expand_response'))
 
 
         response = subject.expand(relation:, object:, opts: { authorization_model_id: })
