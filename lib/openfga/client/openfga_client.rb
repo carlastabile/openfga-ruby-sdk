@@ -27,20 +27,18 @@ module OpenFga
 
     # Delete a store
     # Delete an OpenFGA store. This does not delete the data associated with the store, like tuples or authorization models.
-    # @param store_id [String]
     # @param [Hash] opts the optional parameters
     # @return [nil]
-    def delete_store(store_id, opts = {})
+    def delete_store(opts = {})
       @api_client.delete_store(store_id, opts)
     end
 
     # Get a store
     # Returns an OpenFGA store by its identifier
-    # @param store_id [String]
     # @param [Hash] opts the optional parameters
     # @return [GetStoreResponse]
-    def get_store(store_id, opts = {})
-      @api_client.get_store(store_id, opts)
+    def get_store(opts = {})
+      @api_client.get_store(store_id(opts), opts)
     end
 
     # List all stores
@@ -56,38 +54,34 @@ module OpenFga
     # Writes an authorization model
     # Creates or updates an authorization model for a specific store.
     #
-    # @param store_id [String] The ID of the store where the authorization model will be written.
     # @param body [WriteAuthorizationModelRequest] The request body containing the authorization model details.
     # @param opts [Hash] Optional parameters for the request.
     # @return [WriteAuthorizationModelResponse] The response from the API after writing the authorization model.
-    def write_authorization_model(store_id, body, opts = {})
-      @api_client.write_authorization_model(store_id, body, opts)
+    def write_authorization_model(body, opts = {})
+      @api_client.write_authorization_model(store_id(opts), body, opts)
     end
 
     # Reads an authorization model
     # Retrieves a specific authorization model by its ID from a given store.
-    # @param store_id [String] The ID of the store from which to read the authorization model.
     # @param id [String] The ID of the authorization model to read.
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` or `id` is not provided.
     # @return [ReadAuthorizationModelResponse] The response containing the authorization model details.
-    def read_authorization_model(store_id, id, opts = {})
-      @api_client.read_authorization_model(store_id, id, opts)
+    def read_authorization_model(id, opts = {})
+      @api_client.read_authorization_model(store_id(opts), id, opts)
     end
 
     # Reads all authorization models
     # Retrieves all authorization models for a specific store.
-    # @param store_id [String] The ID of the store from which to read the authorization models.
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` is not provided.
     # @return [ReadAuthorizationModelsResponse] The response containing the list of authorization models.
-    def read_authorization_models(store_id, opts = {})
-      @api_client.read_authorization_models(store_id, opts)
+    def read_authorization_models(opts = {})
+      @api_client.read_authorization_models(store_id(opts), opts)
     end
 
     # Checks whether a specific relationship exists in the store.
     #
-    # @param store_id [String] The ID of the store where the check is performed.
     # @param user [String] The user involved in the relationship.
     # @param relation [String, Symbol] The relation to check (e.g., "reader", "owner").
     # @param object [String] The object involved in the relationship.
@@ -99,7 +93,7 @@ module OpenFga
     # @raise [ArgumentError] If any of the required parameters (`user`, `relation`, or `object`) are missing.
     #
     # @return [CheckResponse] The result of the check operation.
-    def check(store_id:, user:, relation:, object:, opts: {})
+    def check(user:, relation:, object:, opts: {})
       fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
       fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
       fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
@@ -123,7 +117,7 @@ module OpenFga
         request_body.context = opts[:context]
       end
 
-      @api_client.check(store_id, request_body, opts)
+      @api_client.check(store_id(opts), request_body, opts)
     end
 
     # Read changes
@@ -189,6 +183,27 @@ module OpenFga
 
       @api_client.read(store_id(opts), request_body, opts)
     end
+    
+    # POST /stores/{store_id}/write
+    # Transactionally update the tuples for a given store.
+    # @param [Hash] body The request body
+    # @option body [WriteRequest] :writes The tuples to write to the store
+    # @option body [DeleteRequest] :deletes The tuples to remove from the store
+    # @param [Hash] opts The optional parameters
+    # @option opts [String] :store_id The store ID to read changes from
+    # @option opts [String] :authorization_model_id The ID of the authorization model to use for reading and writing
+    def write(body = {}, opts = {})
+      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+
+      request_body = WriteRequest.new(body)
+
+      if opts.include?(:authorization_model_id)
+        request_body.authorization_model_id = opts[:authorization_model_id]
+      end
+
+      @api_client.write(store_id(opts), request_body, opts)
+    end
+
 
     # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the object.
     # @param relation [String||Symbol] The relation to expand (e.g., "reader", :writer).
@@ -222,7 +237,7 @@ module OpenFga
       # Call the API client to perform the expansion
       @api_client.expand(store_id(opts), request_body, opts)
     end
-
+    
     private
       # Returns the store ID from the options or configuration.
       # Raises MissingStoreIdError if the store ID is not provided.
