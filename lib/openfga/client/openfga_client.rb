@@ -184,6 +184,26 @@ module OpenFga
       @api_client.read(store_id(opts), request_body, opts)
     end
 
+    # POST /stores/{store_id}/write
+    # Transactionally update the tuples for a given store.
+    # @param [Hash] body The request body
+    # @option body [WriteRequest] :writes The tuples to write to the store
+    # @option body [DeleteRequest] :deletes The tuples to remove from the store
+    # @param [Hash] opts The optional parameters
+    # @option opts [String] :store_id The store ID to read changes from
+    # @option opts [String] :authorization_model_id The ID of the authorization model to use for reading and writing
+    def write(body = {}, opts = {})
+      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+
+      request_body = WriteRequest.new(body)
+
+      if opts.include?(:authorization_model_id)
+        request_body.authorization_model_id = opts[:authorization_model_id]
+      end
+
+      @api_client.write(store_id(opts), request_body, opts)
+    end
+
     private
       # Returns the store ID from the options or configuration.
       # Raises MissingStoreIdError if the store ID is not provided.
