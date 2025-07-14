@@ -183,7 +183,7 @@ module OpenFga
 
       @api_client.read(store_id(opts), request_body, opts)
     end
-
+    
     # POST /stores/{store_id}/write
     # Transactionally update the tuples for a given store.
     # @param [Hash] body The request body
@@ -204,6 +204,40 @@ module OpenFga
       @api_client.write(store_id(opts), request_body, opts)
     end
 
+
+    # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the object.
+    # @param relation [String||Symbol] The relation to expand (e.g., "reader", :writer).
+    # @param object [String] The object involved in the relationship.
+    # @param opts [Hash] Optional parameters for the request.
+    #   @option opts [String] :store_id The ID of the store where the expansion will be performed.
+    #   @option opts [String] :authorization_model_id The ID of the authorization model to use for the expansion.
+    #   @option opts [Hash] :contextual_tuples Additional contextual tuples to include in the expansion.
+    #   @option opts [String] :consistency The consistency level for the expansion (e.g., "FULL", "EVENTUAL").
+    #
+    # @raise [ArgumentError] If the `relation` or `object` is missing.
+    #
+    # @return [ExpandResponse] The response containing the expanded relationship tuples.
+    def expand(relation:, object:, opts: {})
+      fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
+      fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
+
+      request_body = ExpandRequest.new(
+        tuple_key: ExpandRequestTupleKey.new(relation:, object:),
+        authorization_model_id: opts[:authorization_model_id],
+        consistency: opts[:consistency] || 'UNSPECIFIED'
+      )
+
+      # Build the request body
+      if opts.include?(:contextual_tuples)
+        contextual_tuples = opts[:contextual_tuples]
+        tuple_keys = contextual_tuples[:tuple_keys].map { |tuple_key| TupleKey.new(tuple_key) }
+        request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
+      end
+
+      # Call the API client to perform the expansion
+      @api_client.expand(store_id(opts), request_body, opts)
+    end
+    
     private
       # Returns the store ID from the options or configuration.
       # Raises MissingStoreIdError if the store ID is not provided.
