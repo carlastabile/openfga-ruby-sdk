@@ -770,7 +770,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'throws an error if store_id is not specified' do
-          expect { subject.write({ writes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.write({ writes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
       end
 
@@ -830,7 +830,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'throws an error if store_id is not specified' do
-          expect { subject.write({ deletes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.write({ deletes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
         end
       end
 
