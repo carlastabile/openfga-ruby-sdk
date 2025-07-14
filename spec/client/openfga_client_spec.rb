@@ -3,6 +3,7 @@ require 'spec_helper'
 describe OpenFga::SdkClient do
   let(:api_url) { 'http://localhost:8090' }
   let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
+  let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
   let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
   let(:subject_no_store) { OpenFga::SdkClient.new(api_url:) }
 
