@@ -20,7 +20,7 @@ module OpenFga
     # @param name [String]
     # @param [Hash] opts the optional parameters
     # @return [CreateStoreResponse]
-    def create_store(name, opts = {})
+    def create_store(name:, opts: {})
       body = OpenFga::CreateStoreRequest.new(name:)
       @api_client.create_store(body, opts)
     end
@@ -29,6 +29,7 @@ module OpenFga
     # Delete an OpenFGA store. This does not delete the data associated with the store, like tuples or authorization models.
     # @param [Hash] opts the optional parameters
     # @return [nil]
+    # TODO: named param?
     def delete_store(opts = {})
       @api_client.delete_store(store_id, opts)
     end
@@ -37,6 +38,7 @@ module OpenFga
     # Returns an OpenFGA store by its identifier
     # @param [Hash] opts the optional parameters
     # @return [GetStoreResponse]
+    # # TODO: named param?
     def get_store(opts = {})
       @api_client.get_store(store_id(opts), opts)
     end
@@ -47,6 +49,7 @@ module OpenFga
     # @option opts [Integer] :page_size
     # @option opts [String] :continuation_token
     # @return [ListStoresResponse]
+    # # TODO: named param?
     def list_stores(opts = {})
       @api_client.list_stores(opts)
     end
@@ -57,6 +60,7 @@ module OpenFga
     # @param body [WriteAuthorizationModelRequest] The request body containing the authorization model details.
     # @param opts [Hash] Optional parameters for the request.
     # @return [WriteAuthorizationModelResponse] The response from the API after writing the authorization model.
+    # TODO: named params?
     def write_authorization_model(body, opts = {})
       @api_client.write_authorization_model(store_id(opts), body, opts)
     end
@@ -67,6 +71,7 @@ module OpenFga
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` or `id` is not provided.
     # @return [ReadAuthorizationModelResponse] The response containing the authorization model details.
+    # # TODO: named params?
     def read_authorization_model(id, opts = {})
       @api_client.read_authorization_model(store_id(opts), id, opts)
     end
@@ -76,6 +81,7 @@ module OpenFga
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` is not provided.
     # @return [ReadAuthorizationModelsResponse] The response containing the list of authorization models.
+    # # TODO: named param?
     def read_authorization_models(opts = {})
       @api_client.read_authorization_models(store_id(opts), opts)
     end
@@ -93,7 +99,7 @@ module OpenFga
     # @raise [ArgumentError] If any of the required parameters (`user`, `relation`, or `object`) are missing.
     #
     # @return [CheckResponse] The result of the check operation.
-    def check(user:, relation:, object:, opts: {})
+    def check(user:, relation:, object:, contextual_tuples: nil, context: nil, opts: {})
       fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
       fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
       fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
@@ -103,18 +109,15 @@ module OpenFga
 
       request_body = CheckRequest.new({ tuple_key: })
 
-      if opts.include?(:contextual_tuples)
-        contextual_tuples = opts[:contextual_tuples]
+      unless contextual_tuples.nil?
         tuple_keys = contextual_tuples[:tuple_keys].map { |tuple_key| TupleKey.new(tuple_key) }
         request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
       end
 
+      request_body.context = context unless context.nil?
+
       if opts.include?(:authorization_model_id)
         request_body.authorization_model_id = opts[:authorization_model_id]
-      end
-
-      if opts.include?(:context)
-        request_body.context = opts[:context]
       end
 
       @api_client.check(store_id(opts), request_body, opts)
@@ -122,19 +125,17 @@ module OpenFga
 
     # Read changes
     # Reads the list of historical relationship tuple writes and deletes.
-    # @param [Hash] body The request body
-    # @option body [String] :start_time The start time of the range to read changes from. This is a timestamp in ISO 8601 format.
-    # @option body [String] :type Get the list of tuple changes that affect only this type
+    # @param type [String] :type Get the list of tuple changes that affect only this type
+    # @param start_time [String] :start_time The start time of the range to read changes from. This is a timestamp in ISO 8601 format.
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page_size The number of pages to return in the request
     # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results.
     # @option opts [String] :store_id The store ID to read changes from
-    def read_changes(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+    def read_changes(type:, start_time:, opts: {})
+      fail ArgumentError, "Missing the required parameter 'type'" if type.nil?
+      fail ArgumentError, "Missing the required parameter 'start_time'" if start_time.nil?
 
-      # the underlying client has an allowlist of parameters, so no need to
-      # strip out `store_id` from the body.
-      @api_client.read_changes(store_id(opts), opts.merge(body))
+      @api_client.read_changes(store_id(opts), opts.merge(type:, start_time:))
     end
 
     # GET /stores/{store_id}/assertions/{authorization_model_id}

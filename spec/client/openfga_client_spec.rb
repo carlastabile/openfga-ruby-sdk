@@ -355,7 +355,7 @@ describe OpenFga::SdkClient do
                                    response_body: { allowed: true, resolution: 'string' })
 
         response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
-                                 opts: { contextual_tuples: })
+                                 contextual_tuples:)
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -397,7 +397,7 @@ describe OpenFga::SdkClient do
                                    response_body: { allowed: true, resolution: 'string' })
 
         response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
-                                 opts: { context: {} })
+                                 context: {})
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -532,7 +532,7 @@ describe OpenFga::SdkClient do
                                    request_body: { name: 'new_store' },
                                    response_body: store_attributes)
 
-        response = subject.create_store('new_store')
+        response = subject.create_store(name: 'new_store')
 
         expect(response).to be_instance_of(OpenFga::CreateStoreResponse)
         expect(response.id).to eq(store_id)
@@ -546,7 +546,7 @@ describe OpenFga::SdkClient do
                                    response_body: { code: 'validation_error',
                                                     message: 'Generic validation error' })
 
-        expect { subject.create_store('') }.to raise_error(OpenFga::ApiError)
+        expect { subject.create_store(name: '') }.to raise_error(OpenFga::ApiError)
       end
     end
 
@@ -643,6 +643,10 @@ describe OpenFga::SdkClient do
 
   describe 'Tuples' do
     describe 'when reading changes' do
+      let(:type){ "document" }
+      let(:start_time){ "2014-01-02T15:14:15Z" }
+      let(:page_size){ 10 }
+      let(:continuation_token){ "token" }
       let(:response_body) { {
         changes: [
           {
@@ -665,11 +669,11 @@ describe OpenFga::SdkClient do
       describe 'when there are no options' do
         before do
           stub_request_with_response(method: :get,
-                                     path: "#{stores_url(store_id)}/changes",
+                                     path: "#{stores_url(store_id)}/changes?type=#{type}&start_time=#{start_time}",
                                      status: 200,
                                      response_body:)
 
-          @response = subject.read_changes({}, store_id:)
+          @response = subject.read_changes(type:, start_time:)
         end
 
         it 'should read tuple changes successfully' do
@@ -687,12 +691,12 @@ describe OpenFga::SdkClient do
         end
 
         it 'should raise an error if store_id is missing' do
-          expect { subject_no_store.read_changes({}, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.read_changes(type:, start_time:, opts: { store_id: nil }) }.to raise_error(MissingStoreIdError)
         end
 
         it 'should not raise an error if the store_id is given as client config' do
           client = OpenFga::SdkClient.new(api_url:, store_id:)
-          expect { client.read_changes }.not_to raise_error
+          expect { client.read_changes(type:, start_time:) }.not_to raise_error
         end
       end
 
@@ -700,24 +704,19 @@ describe OpenFga::SdkClient do
         it 'should send the correct request' do
           stub_request_with_response(
             method: :get,
-            path: "#{stores_url(store_id)}/changes?page_size=10&type=document&start_time=2025-04-23T14%3A30%3A00.000Z&continuation_token=token",
+            path: "#{stores_url(store_id)}/changes?page_size=#{page_size}&type=#{type}&start_time=#{start_time}&continuation_token=#{continuation_token}",
             status: 200,
             response_body:)
 
-          body = {
-            type: :document,
-            start_time: '2025-04-23T14:30:00.000Z',
-          }
-
           opts = {
-            continuation_token: 'token',
+            continuation_token:,
             store_id:,
-            page_size: 10
+            page_size:
           }
 
           # call will fail if the request if `path` above is not generated correctly
           # based on `body` and `opts`.
-          expect { subject.read_changes(body, opts) }.not_to raise_error
+          expect { subject.read_changes(type:, start_time:, opts:) }.not_to raise_error
         end
       end
     end
