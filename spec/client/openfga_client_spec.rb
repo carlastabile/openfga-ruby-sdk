@@ -643,10 +643,10 @@ describe OpenFga::SdkClient do
 
   describe 'Tuples' do
     describe 'when reading changes' do
-      let(:type){ "document" }
-      let(:start_time){ "2014-01-02T15:14:15Z" }
-      let(:page_size){ 10 }
-      let(:continuation_token){ "token" }
+      let(:type) { 'document' }
+      let(:start_time) { '2014-01-02T15:14:15Z' }
+      let(:page_size) { 10 }
+      let(:continuation_token) { 'token' }
       let(:response_body) { {
         changes: [
           {
