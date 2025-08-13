@@ -53,12 +53,20 @@ module OpenFga
 
     # Writes an authorization model
     # Creates or updates an authorization model for a specific store.
-    #
-    # @param body [WriteAuthorizationModelRequest] The request body containing the authorization model details.
+    # @param type_definitions [Array<TypeDefinition>] The type definitions for the authorization model.
+    # @param schema_version [String] The schema version for the authorization model.
+    # @param conditions [Hash] The conditions for the authorization model.
     # @param opts [Hash] Optional parameters for the request.
-    # @return [WriteAuthorizationModelResponse] The response from the API after writing the authorization model.
-    # TODO: named params?
-    def write_authorization_model(body, opts = {})
+    def write_authorization_model(type_definitions:, schema_version:, conditions: nil, opts: {})
+      fail ArgumentError, "Missing the required parameter 'type_definitions'" if type_definitions.nil?
+      fail ArgumentError, "Missing the required parameter 'schema_version'" if schema_version.nil?
+
+      body = WriteAuthorizationModelRequest.new(
+        type_definitions:,
+        schema_version:,
+        conditions:
+      )
+
       @api_client.write_authorization_model(store_id(opts), body, opts)
     end
 
