@@ -188,19 +188,18 @@ module OpenFga
 
       @api_client.read(store_id(opts), request_body, opts)
     end
-    
+
     # POST /stores/{store_id}/write
     # Transactionally update the tuples for a given store.
-    # @param [Hash] body The request body
-    # @option body [WriteRequest] :writes The tuples to write to the store
-    # @option body [DeleteRequest] :deletes The tuples to remove from the store
-    # @param [Hash] opts The optional parameters
-    # @option opts [String] :store_id The store ID to read changes from
-    # @option opts [String] :authorization_model_id The ID of the authorization model to use for reading and writing
-    def write(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+    # @param writes [Array<Hash>] The tuples to write to the store.
+    # @param deletes [Array<Hash>] The tuples to remove from the store.
+    # @param opts [Hash] The optional parameters.
+    # @option opts [String] :store_id The store ID to write to.
+    # @option opts [String] :authorization_model_id The ID of the authorization model to use for writing.
+    def write(writes: nil, deletes: nil, opts: {})
+      fail ArgumentError, "Missing the required parameter 'writes' or 'deletes'" if writes.nil? && deletes.nil?
 
-      request_body = WriteRequest.new(body)
+      request_body = WriteRequest.new(writes:, deletes:)
 
       if opts.include?(:authorization_model_id)
         request_body.authorization_model_id = opts[:authorization_model_id]
@@ -208,7 +207,6 @@ module OpenFga
 
       @api_client.write(store_id(opts), request_body, opts)
     end
-
 
     # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the object.
     # @param relation [String||Symbol] The relation to expand (e.g., "reader", :writer).

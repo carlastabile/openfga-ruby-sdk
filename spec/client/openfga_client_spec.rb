@@ -896,7 +896,7 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
           
-          subject.write({ writes: }, opts)
+          subject.write(writes:, opts:)
 
           expect(stub).to have_been_requested
         end
@@ -918,13 +918,13 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
           
-          subject.write({ writes: }, opts)
+          subject.write(writes:, opts:)
 
           expect(stub).to have_been_requested
         end
 
         it 'throws an error if store_id is not specified' do
-          expect { subject_no_store.write({ writes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.write(writes:) }.to raise_error(MissingStoreIdError)
         end
       end
 
@@ -956,7 +956,7 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
           
-          subject.write({ deletes: }, opts)
+          subject.write(deletes:, opts:)
 
           expect(stub).to have_been_requested
         end
@@ -978,13 +978,13 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
           
-          subject.write({ deletes: }, opts)
+          subject.write(deletes:, opts:)
 
           expect(stub).to have_been_requested
         end
 
         it 'throws an error if store_id is not specified' do
-          expect { subject_no_store.write({ deletes: }, store_id: nil) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.write(deletes:) }.to raise_error(MissingStoreIdError)
         end
       end
 
@@ -1021,7 +1021,7 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
           
-          subject.write({
+          subject.write(
             writes: {
               tuple_keys: [{
                 user: 'user:2',
@@ -1035,7 +1035,7 @@ describe OpenFga::SdkClient do
                 relation: 'member',
                 object: 'group:1'
               }]
-            } }, opts)
+            }, opts:)
 
           expect(stub).to have_been_requested
         end
