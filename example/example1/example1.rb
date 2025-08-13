@@ -1,10 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'bundler/setup'
-require 'openfga'
-require 'json'
-require 'logger'
+require 'bundler/inline'
+
+gemfile do
+  source 'https://rubygems.org'
+  gem 'json'
+  gem 'openfga', '~> 0.0.1', path: File.expand_path('../../../', __dir__)
+  gem 'logger'
+end
 
 # OpenFGA Ruby SDK Example
 # This example demonstrates how to use the OpenFGA Ruby SDK to interact with an OpenFGA server.
@@ -88,7 +92,7 @@ class OpenFgaExample
       @logger.info '=== Creating Store ==='
 
       store_name = "Example Store #{Time.now.to_i}"
-      response = @client.create_store(store_name)
+      response = @client.create_store(name: store_name)
 
       @store_id = response.id
       @logger.info "Created store: #{@store_id}"
@@ -470,7 +474,7 @@ class OpenFgaExample
         conditions: {}
       }
 
-      response = @client.write_authorization_model(authorization_model)
+      response = @client.write_authorization_model(**authorization_model)
       @authorization_model_id = response.authorization_model_id
       @logger.info "Created authorization model: #{@authorization_model_id}"
     end
@@ -478,7 +482,7 @@ class OpenFgaExample
     def read_authorization_model_example
       @logger.info '=== Reading Authorization Model ==='
 
-      response = @client.read_authorization_model(@authorization_model_id)
+      response = @client.read_authorization_model(id: @authorization_model_id)
       @logger.info "Authorization model ID: #{response.authorization_model.id}"
       @logger.info "Schema version: #{response.authorization_model.schema_version}"
       @logger.info "Type definitions count: #{response.authorization_model.type_definitions.length}"
@@ -499,8 +503,7 @@ class OpenFgaExample
       @logger.info '=== Writing Relationship Tuples ==='
 
       # Write some sample relationships for GitHub-like repository system
-      tuples_to_write = {
-        writes: {
+      writes = {
           tuple_keys: [
             # Create an organization and add users
             {
@@ -590,21 +593,17 @@ class OpenFgaExample
               object: 'repo:python-sdk'
             }
           ]
-        }
       }
 
-      @client.write(tuples_to_write, authorization_model_id: @authorization_model_id)
-      @logger.info "Successfully wrote #{tuples_to_write[:writes][:tuple_keys].length} tuples"
+      @client.write(writes:, opts: { authorization_model_id: @authorization_model_id })
+      @logger.info "Successfully wrote #{writes[:tuple_keys].length} tuples"
     end
 
     def read_tuples_example
       @logger.info '=== Reading Relationship Tuples ==='
 
       # Read all tuples for repo:ruby-sdk
-      response = @client.read(
-        { object: 'repo:ruby-sdk' },
-        authorization_model_id: @authorization_model_id
-      )
+      response = @client.read(object: 'repo:ruby-sdk', opts: { authorization_model_id: @authorization_model_id })
 
       @logger.info "Found #{response.tuples.length} tuples for repo:ruby-sdk:"
       response.tuples.each do |tuple|
@@ -682,7 +681,7 @@ class OpenFgaExample
       @logger.info '=== Reading Tuple Changes ==='
 
       # Read recent changes to the store
-      response = @client.read_changes({})
+      response = @client.read_changes(type: 'document', start_time: '2022-01-01T00:00:00Z')
 
       @logger.info "Found #{response.changes.length} recent changes:"
       response.changes.each do |change|
@@ -721,10 +720,8 @@ class OpenFgaExample
         }
       ]
 
-      @client.write_assertions(
-        { assertions: },
-        authorization_model_id: @authorization_model_id
-      )
+      @client.write_assertions(assertions:,
+                               opts: { authorization_model_id: @authorization_model_id })
 
       @logger.info "Successfully wrote #{assertions.length} assertions"
     end
