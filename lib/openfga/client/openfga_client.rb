@@ -2,6 +2,8 @@
 
 module OpenFga
   class SdkClient
+    PAGE_SIZE = 50
+
     def initialize(config = {})
       raise ConfigurationNilError.new(:api_url) unless config[:api_url]
 
@@ -164,7 +166,6 @@ module OpenFga
 
     # Read tuples
     # Reads tuples from the store.
-    # @param [Hash] body The request body
     # @option body [String] :user The user to read tuples for
     # @option body [String] :relation The relation to read tuples for
     # @option body [String] :object The object to read tuples for
@@ -172,18 +173,19 @@ module OpenFga
     # @option opts [Integer] :page_size The number of pages to return in the request
     # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results.
     # @option opts [String] :store_id The store ID to read changes from
-    def read(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
-
+    def read(user: nil, relation: nil, object: nil, opts: {})
       request_body = ReadRequest.new(
         continuation_token: opts[:continuation_token],
-        page_size: opts[:page_size] || 50,
-        tuple_key: {
-          user: body[:user],
-          relation: body[:relation].to_s,
-          object: body[:object]
-        },
+        page_size: opts[:page_size] || PAGE_SIZE,
         consistency: opts[:consistency])
+
+      if user || relation || object
+        tuple_key = {}
+        tuple_key[:user] = user if user
+        tuple_key[:relation] = relation.to_s if relation
+        tuple_key[:object] = object if object
+        request_body.tuple_key = ReadRequestTupleKey.new(tuple_key)
+      end
 
       @api_client.read(store_id(opts), request_body, opts)
     end
