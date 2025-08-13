@@ -29,7 +29,6 @@ module OpenFga
     # Delete an OpenFGA store. This does not delete the data associated with the store, like tuples or authorization models.
     # @param [Hash] opts the optional parameters
     # @return [nil]
-    # TODO: named param?
     def delete_store(opts = {})
       @api_client.delete_store(store_id, opts)
     end
@@ -38,7 +37,6 @@ module OpenFga
     # Returns an OpenFGA store by its identifier
     # @param [Hash] opts the optional parameters
     # @return [GetStoreResponse]
-    # # TODO: named param?
     def get_store(opts = {})
       @api_client.get_store(store_id(opts), opts)
     end
@@ -49,7 +47,6 @@ module OpenFga
     # @option opts [Integer] :page_size
     # @option opts [String] :continuation_token
     # @return [ListStoresResponse]
-    # # TODO: named param?
     def list_stores(opts = {})
       @api_client.list_stores(opts)
     end
@@ -71,8 +68,7 @@ module OpenFga
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` or `id` is not provided.
     # @return [ReadAuthorizationModelResponse] The response containing the authorization model details.
-    # # TODO: named params?
-    def read_authorization_model(id, opts = {})
+    def read_authorization_model(id:, opts: {})
       @api_client.read_authorization_model(store_id(opts), id, opts)
     end
 
@@ -81,7 +77,6 @@ module OpenFga
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` is not provided.
     # @return [ReadAuthorizationModelsResponse] The response containing the list of authorization models.
-    # # TODO: named param?
     def read_authorization_models(opts = {})
       @api_client.read_authorization_models(store_id(opts), opts)
     end
