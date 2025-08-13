@@ -750,22 +750,25 @@ describe OpenFga::SdkClient do
     end
 
     describe 'when reading tuples' do
+      let(:user){ 'user:1'}
+      let(:relation) { 'reader' }
+      let(:object_all) { 'document:' }
+      let(:object) { 'document:1' }
       let(:request_body) { {
                                    tuple_key: {
-                                     user: 'user:1',
-                                     relation: 'reader',
-                                     object: 'document:'
+                                     user:,
+                                     relation:,
+                                     object:
                                    },
                                    page_size: 50
                                  }}
-
       let(:response_body) {
         {
           tuples: [
             key: {
-              user: 'user:1',
-              relation: 'reader',
-              object: 'document:1'
+              user:,
+              relation:,
+              object:
             },
             timestamp: '2025-06-06T14:30:00.000Z',
           ],
@@ -773,28 +776,74 @@ describe OpenFga::SdkClient do
         }
       }
 
-      let(:read_request) {
-        { user: 'user:1', relation: :reader, object: 'document:' }
-      }
-
       describe 'when there are no options' do
-        before do
-          @stub = stub_request_with_response(method: :post,
-                                     path: "#{stores_url(store_id)}/read",
-                                     status: 200,
-                                     request_body:,
-                                     response_body:)
+        it 'should read a single tuple successfully' do
+          stub = stub_request_with_response(method: :post,
+                                           path: "#{stores_url(store_id)}/read",
+                                           status: 200,
+                                           request_body:,
+                                           response_body:)
 
-          @response = subject.read(read_request, store_id:)
+          response = subject.read(user:, relation:, object:)
+
+          expect(stub).to have_been_requested
+          expect(response).to be_a(OpenFga::ReadResponse)
         end
 
-        it 'should read tuples successfully' do
-          expect(@stub).to have_been_requested
-          expect(@response).to be_a(OpenFga::ReadResponse)
+        it 'should read all tuples' do
+          stub = stub_request_with_response(method: :post,
+                                            path: "#{stores_url(store_id)}/read",
+                                            status: 200,
+                                            request_body: { page_size: 50 },
+                                            response_body:)
+
+          response = subject.read
+
+          expect(stub).to have_been_requested
+          expect(response).to be_a(OpenFga::ReadResponse)
+        end
+
+        it 'should read all tuples of a type successfully' do
+          stub = stub_request_with_response(method: :post,
+                                            path: "#{stores_url(store_id)}/read",
+                                            status: 200,
+                                            request_body: { tuple_key: { user:, relation:, object: object_all }, page_size: 50 },
+                                            response_body:)
+
+          response = subject.read(user:, relation:, object: object_all)
+
+          expect(stub).to have_been_requested
+          expect(response).to be_a(OpenFga::ReadResponse)
+        end
+
+        it 'should read tuples related to a user and object successfully' do
+          stub = stub_request_with_response(method: :post,
+                                            path: "#{stores_url(store_id)}/read",
+                                            status: 200,
+                                            request_body: { tuple_key: { user:, object: }, page_size: 50 },
+                                            response_body:)
+
+          response = subject.read(user:, object:)
+
+          expect(stub).to have_been_requested
+          expect(response).to be_a(OpenFga::ReadResponse)
+        end
+
+        it 'should read tuples related to an object successfully' do
+          stub = stub_request_with_response(method: :post,
+                                            path: "#{stores_url(store_id)}/read",
+                                            status: 200,
+                                            request_body: { tuple_key: { object: }, page_size: 50 },
+                                            response_body:)
+
+          response = subject.read(object:)
+
+          expect(stub).to have_been_requested
+          expect(response).to be_a(OpenFga::ReadResponse)
         end
 
         it 'should raise an error if store_id is missing' do
-          expect { subject_no_store.read(read_request) }.to raise_error(MissingStoreIdError)
+          expect { subject_no_store.read(user:, relation:, object:) }.to raise_error(MissingStoreIdError)
         end
       end
 
@@ -813,7 +862,7 @@ describe OpenFga::SdkClient do
             request_body: request_body.merge(opts.except(:store_id)),
             response_body:)
 
-          subject.read(read_request, opts)
+          subject.read(user:, relation:, object:, opts:)
           expect(stub).to have_been_requested
         end
       end
