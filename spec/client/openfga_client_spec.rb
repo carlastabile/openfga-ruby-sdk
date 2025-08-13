@@ -34,7 +34,7 @@ describe OpenFga::SdkClient do
   describe 'Authorization Models' do
     context 'when writing an authorization model' do
       let(:valid_body) { load_json('write_authorization_model_body') }
-      let(:invalid_body) { { type_definitions: [] } }
+      let(:invalid_body) { { type_definitions: [{}], schema_version: '1.1' } }
 
       # unit tests for write_authorization_model
       # Create a new authorization model
@@ -50,7 +50,9 @@ describe OpenFga::SdkClient do
                                    request_body: valid_body,
                                    response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
 
-        response = subject.write_authorization_model(valid_body)
+        response = subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                     schema_version: valid_body['schema_version'],
+                                                     conditions: valid_body['conditions'])
         expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
         expect(response.authorization_model_id).not_to be_nil
       end
@@ -65,14 +67,18 @@ describe OpenFga::SdkClient do
                                      message: 'Generic validation error'
                                    })
 
-        expect { subject.write_authorization_model(invalid_body) }.to(raise_error(OpenFga::ApiError))
+        expect { subject.write_authorization_model(type_definitions: invalid_body[:type_definitions],
+                                                   schema_version: invalid_body[:schema_version]) }
+          .to(raise_error(OpenFga::ApiError))
       end
 
       it 'raises an error if store_id is missing' do
         stub_request_with_response(method: :post,
                                    path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
-        expect { subject_no_store.write_authorization_model(valid_body) }.to raise_error(MissingStoreIdError)
+        expect { subject_no_store.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                            schema_version: valid_body['schema_version'],
+                                                            conditions: valid_body['conditions']) }.to raise_error(MissingStoreIdError)
       end
 
       it 'raises an error if body is missing' do
