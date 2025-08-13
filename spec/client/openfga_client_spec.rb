@@ -99,17 +99,17 @@ describe OpenFga::SdkClient do
                                    status: 200,
                                    response_body: valid_response)
 
-        result = subject.read_authorization_model(model_id)
+        result = subject.read_authorization_model(id: model_id)
         expect(result).to be_a(OpenFga::ReadAuthorizationModelResponse)
         expect(result.authorization_model.id).to eq(model_id)
       end
 
       it 'raises an error if store_id is missing' do
-        expect { subject_no_store.read_authorization_model(model_id) }.to raise_error(MissingStoreIdError)
+        expect { subject_no_store.read_authorization_model(id: model_id) }.to raise_error(MissingStoreIdError)
       end
 
       it 'raises an error if model_id is missing' do
-        expect { subject.read_authorization_model(nil) }.to raise_error(ArgumentError)
+        expect { subject.read_authorization_model(id: nil) }.to raise_error(ArgumentError)
       end
 
       it 'raises an error if the authorization model does not exist' do
@@ -120,7 +120,7 @@ describe OpenFga::SdkClient do
                                      code: 'undefined_endpoint',
                                      message: 'Endpoint not enabled'
                                    })
-        expect { subject.read_authorization_model(model_id) }.to raise_error(OpenFga::ApiError)
+        expect { subject.read_authorization_model(id: model_id) }.to raise_error(OpenFga::ApiError)
       end
     end
 
