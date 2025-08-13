@@ -343,5 +343,30 @@
     }
   ],
   "schema_version": "1.1",
-  "conditions": {}
+  "conditions": {
+    "additionalProp1": {
+      "name": "string",
+      "expression": "string",
+      "parameters": {
+        "additionalProp1": {
+          "type_name": "TYPE_NAME_UNSPECIFIED",
+          "generic_types": [
+            {}
+          ]
+        },
+        "additionalProp2": {
+          "type_name": "TYPE_NAME_UNSPECIFIED",
+          "generic_types": [
+            {}
+          ]
+        },
+        "additionalProp3": {
+          "type_name": "TYPE_NAME_UNSPECIFIED",
+          "generic_types": [
+            {}
+          ]
+        }
+      }
+    }
+  }
 }
