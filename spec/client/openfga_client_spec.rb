@@ -750,7 +750,7 @@ describe OpenFga::SdkClient do
     end
 
     describe 'when reading tuples' do
-      let(:user){ 'user:1'}
+      let(:user) { 'user:1' }
       let(:relation) { 'reader' }
       let(:object_all) { 'document:' }
       let(:object) { 'document:1' }
