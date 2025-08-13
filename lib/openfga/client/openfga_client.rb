@@ -164,15 +164,14 @@ module OpenFga
       @api_client.write_assertions(store_id(opts), authorization_model_id(opts), request_body, opts)
     end
 
-    # Read tuples
     # Reads tuples from the store.
-    # @option body [String] :user The user to read tuples for
-    # @option body [String] :relation The relation to read tuples for
-    # @option body [String] :object The object to read tuples for
-    # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :page_size The number of pages to return in the request
-    # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results.
-    # @option opts [String] :store_id The store ID to read changes from
+    # @param user [String, nil] The user to read tuples for.
+    # @param relation [String, Symbol, nil] The relation to read tuples for.
+    # @param object [String, nil] The object to read tuples for.
+    # @param opts [Hash] Optional parameters for the request.
+    # @option opts [Integer] :page_size The number of tuples to return per page.
+    # @option opts [String] :continuation_token The continuation token for pagination.
+    # @option opts [String] :store_id The store ID to read tuples from.
     def read(user: nil, relation: nil, object: nil, opts: {})
       request_body = ReadRequest.new(
         continuation_token: opts[:continuation_token],
