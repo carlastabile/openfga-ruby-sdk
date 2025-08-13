@@ -2,6 +2,8 @@
 
 module OpenFga
   class SdkClient
+    PAGE_SIZE = 50
+
     def initialize(config = {})
       raise ConfigurationNilError.new(:api_url) unless config[:api_url]
 
@@ -20,7 +22,7 @@ module OpenFga
     # @param name [String]
     # @param [Hash] opts the optional parameters
     # @return [CreateStoreResponse]
-    def create_store(name, opts = {})
+    def create_store(name:, opts: {})
       body = OpenFga::CreateStoreRequest.new(name:)
       @api_client.create_store(body, opts)
     end
@@ -53,11 +55,20 @@ module OpenFga
 
     # Writes an authorization model
     # Creates or updates an authorization model for a specific store.
-    #
-    # @param body [WriteAuthorizationModelRequest] The request body containing the authorization model details.
+    # @param type_definitions [Array<TypeDefinition>] The type definitions for the authorization model.
+    # @param schema_version [String] The schema version for the authorization model.
+    # @param conditions [Hash] The conditions for the authorization model.
     # @param opts [Hash] Optional parameters for the request.
-    # @return [WriteAuthorizationModelResponse] The response from the API after writing the authorization model.
-    def write_authorization_model(body, opts = {})
+    def write_authorization_model(type_definitions:, schema_version:, conditions: nil, opts: {})
+      fail ArgumentError, "Missing the required parameter 'type_definitions'" if type_definitions.nil?
+      fail ArgumentError, "Missing the required parameter 'schema_version'" if schema_version.nil?
+
+      body = WriteAuthorizationModelRequest.new(
+        type_definitions:,
+        schema_version:,
+        conditions:
+      )
+
       @api_client.write_authorization_model(store_id(opts), body, opts)
     end
 
@@ -67,7 +78,7 @@ module OpenFga
     # @param opts [Hash] Optional parameters for the request.
     # @raise [ArgumentError] If the `store_id` or `id` is not provided.
     # @return [ReadAuthorizationModelResponse] The response containing the authorization model details.
-    def read_authorization_model(id, opts = {})
+    def read_authorization_model(id:, opts: {})
       @api_client.read_authorization_model(store_id(opts), id, opts)
     end
 
@@ -93,7 +104,7 @@ module OpenFga
     # @raise [ArgumentError] If any of the required parameters (`user`, `relation`, or `object`) are missing.
     #
     # @return [CheckResponse] The result of the check operation.
-    def check(user:, relation:, object:, opts: {})
+    def check(user:, relation:, object:, contextual_tuples: nil, context: nil, opts: {})
       fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
       fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
       fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
@@ -103,18 +114,15 @@ module OpenFga
 
       request_body = CheckRequest.new({ tuple_key: })
 
-      if opts.include?(:contextual_tuples)
-        contextual_tuples = opts[:contextual_tuples]
+      unless contextual_tuples.nil?
         tuple_keys = contextual_tuples[:tuple_keys].map { |tuple_key| TupleKey.new(tuple_key) }
         request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
       end
 
+      request_body.context = context unless context.nil?
+
       if opts.include?(:authorization_model_id)
         request_body.authorization_model_id = opts[:authorization_model_id]
-      end
-
-      if opts.include?(:context)
-        request_body.context = opts[:context]
       end
 
       @api_client.check(store_id(opts), request_body, opts)
@@ -122,19 +130,17 @@ module OpenFga
 
     # Read changes
     # Reads the list of historical relationship tuple writes and deletes.
-    # @param [Hash] body The request body
-    # @option body [String] :start_time The start time of the range to read changes from. This is a timestamp in ISO 8601 format.
-    # @option body [String] :type Get the list of tuple changes that affect only this type
+    # @param type [String] :type Get the list of tuple changes that affect only this type
+    # @param start_time [String] :start_time The start time of the range to read changes from. This is a timestamp in ISO 8601 format.
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page_size The number of pages to return in the request
     # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results.
     # @option opts [String] :store_id The store ID to read changes from
-    def read_changes(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+    def read_changes(type:, start_time:, opts: {})
+      fail ArgumentError, "Missing the required parameter 'type'" if type.nil?
+      fail ArgumentError, "Missing the required parameter 'start_time'" if start_time.nil?
 
-      # the underlying client has an allowlist of parameters, so no need to
-      # strip out `store_id` from the body.
-      @api_client.read_changes(store_id(opts), opts.merge(body))
+      @api_client.read_changes(store_id(opts), opts.merge(type:, start_time:))
     end
 
     # GET /stores/{store_id}/assertions/{authorization_model_id}
@@ -147,55 +153,53 @@ module OpenFga
 
     # PUT /stores/{store_id}/assertions/{authorization_model_id}
     # Update assertions for a specific store and authorization model
-    # @param body [UpdateAssertionsRequest] The request body containing the assertions
+    # @param assertions [Hash] The request body containing the assertions
     # @param [Hash] opts The optional parameters
     # @return [nil]
-    def write_assertions(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+    def write_assertions(assertions:, opts: {})
+      fail ArgumentError, "Missing the required parameter 'assertions'" if assertions.nil? || assertions.empty?
 
-      request_body = WriteAssertionsRequest.new(body)
+      request_body = WriteAssertionsRequest.new(assertions:)
 
       @api_client.write_assertions(store_id(opts), authorization_model_id(opts), request_body, opts)
     end
 
-    # Read tuples
     # Reads tuples from the store.
-    # @param [Hash] body The request body
-    # @option body [String] :user The user to read tuples for
-    # @option body [String] :relation The relation to read tuples for
-    # @option body [String] :object The object to read tuples for
-    # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :page_size The number of pages to return in the request
-    # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results.
-    # @option opts [String] :store_id The store ID to read changes from
-    def read(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
-
+    # @param user [String, nil] The user to read tuples for.
+    # @param relation [String, Symbol, nil] The relation to read tuples for.
+    # @param object [String, nil] The object to read tuples for.
+    # @param opts [Hash] Optional parameters for the request.
+    # @option opts [Integer] :page_size The number of tuples to return per page.
+    # @option opts [String] :continuation_token The continuation token for pagination.
+    # @option opts [String] :store_id The store ID to read tuples from.
+    def read(user: nil, relation: nil, object: nil, opts: {})
       request_body = ReadRequest.new(
         continuation_token: opts[:continuation_token],
-        page_size: opts[:page_size] || 50,
-        tuple_key: {
-          user: body[:user],
-          relation: body[:relation].to_s,
-          object: body[:object]
-        },
+        page_size: opts[:page_size] || PAGE_SIZE,
         consistency: opts[:consistency])
+
+      if user || relation || object
+        tuple_key = {}
+        tuple_key[:user] = user if user
+        tuple_key[:relation] = relation.to_s if relation
+        tuple_key[:object] = object if object
+        request_body.tuple_key = ReadRequestTupleKey.new(tuple_key)
+      end
 
       @api_client.read(store_id(opts), request_body, opts)
     end
-    
+
     # POST /stores/{store_id}/write
     # Transactionally update the tuples for a given store.
-    # @param [Hash] body The request body
-    # @option body [WriteRequest] :writes The tuples to write to the store
-    # @option body [DeleteRequest] :deletes The tuples to remove from the store
-    # @param [Hash] opts The optional parameters
-    # @option opts [String] :store_id The store ID to read changes from
-    # @option opts [String] :authorization_model_id The ID of the authorization model to use for reading and writing
-    def write(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+    # @param writes [Array<Hash>] The tuples to write to the store.
+    # @param deletes [Array<Hash>] The tuples to remove from the store.
+    # @param opts [Hash] The optional parameters.
+    # @option opts [String] :store_id The store ID to write to.
+    # @option opts [String] :authorization_model_id The ID of the authorization model to use for writing.
+    def write(writes: nil, deletes: nil, opts: {})
+      fail ArgumentError, "Missing the required parameter 'writes' or 'deletes'" if writes.nil? && deletes.nil?
 
-      request_body = WriteRequest.new(body)
+      request_body = WriteRequest.new(writes:, deletes:)
 
       if opts.include?(:authorization_model_id)
         request_body.authorization_model_id = opts[:authorization_model_id]
@@ -203,7 +207,6 @@ module OpenFga
 
       @api_client.write(store_id(opts), request_body, opts)
     end
-
 
     # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the object.
     # @param relation [String||Symbol] The relation to expand (e.g., "reader", :writer).
