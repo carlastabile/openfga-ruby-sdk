@@ -57,6 +57,19 @@ describe OpenFga::SdkClient do
         expect(response.authorization_model_id).not_to be_nil
       end
 
+      it 'should work without conditions' do
+        stub_request_with_response(method: :post,
+                                   path: "#{stores_url(store_id)}/authorization-models",
+                                   status: 201,
+                                   request_body: valid_body.slice('type_definitions', 'schema_version'),
+                                   response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
+
+        response = subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                     schema_version: valid_body['schema_version'])
+        expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
+        expect(response.authorization_model_id).not_to be_nil
+      end
+
       it 'raises an error for invalid authorization model request' do
         stub_request_with_response(method: :post,
                                    path: "#{stores_url(store_id)}/authorization-models",
@@ -81,11 +94,20 @@ describe OpenFga::SdkClient do
                                                             conditions: valid_body['conditions']) }.to raise_error(MissingStoreIdError)
       end
 
-      it 'raises an error if body is missing' do
+      it 'raises an error if type_definition is missing' do
         stub_request_with_response(method: :post,
                                    path: "#{stores_url(store_id)}/authorization-models",
                                    status: 400)
-        expect { subject.write_authorization_model }.to raise_error(ArgumentError)
+        expect { subject.write_authorization_model(type_definitions: nil,
+                                                   schema_version: valid_body['schema_version']) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if schema_version is missing' do
+        stub_request_with_response(method: :post,
+                                   path: "#{stores_url(store_id)}/authorization-models",
+                                   status: 400)
+        expect { subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                   schema_version: nil) }.to raise_error(ArgumentError)
       end
     end
 
