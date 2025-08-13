@@ -151,13 +151,13 @@ module OpenFga
 
     # PUT /stores/{store_id}/assertions/{authorization_model_id}
     # Update assertions for a specific store and authorization model
-    # @param body [UpdateAssertionsRequest] The request body containing the assertions
+    # @param assertions [Hash] The request body containing the assertions
     # @param [Hash] opts The optional parameters
     # @return [nil]
-    def write_assertions(body = {}, opts = {})
-      fail ArgumentError, "Missing the required parameter 'body'" if body.nil?
+    def write_assertions(assertions:, opts: {})
+      fail ArgumentError, "Missing the required parameter 'assertions'" if assertions.nil? || assertions.empty?
 
-      request_body = WriteAssertionsRequest.new(body)
+      request_body = WriteAssertionsRequest.new(assertions:)
 
       @api_client.write_assertions(store_id(opts), authorization_model_id(opts), request_body, opts)
     end

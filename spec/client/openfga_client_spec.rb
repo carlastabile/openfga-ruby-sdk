@@ -249,15 +249,15 @@ describe OpenFga::SdkClient do
                                      status: 204,
                                      request_body: { assertions: })
 
-          expect { subject.write_assertions({ assertions: }, store_id:, authorization_model_id:) }.not_to raise_error
+          expect { subject.write_assertions(assertions:, opts: { store_id:, authorization_model_id: }) }.not_to raise_error
         end
 
         it 'raises an error if store_id is missing' do
-          expect { subject.write_assertions(store_id: nil, authorization_model_id:) }.to raise_error(ArgumentError)
+          expect { subject_no_store.write_assertions(assertions:) }.to raise_error(MissingStoreIdError)
         end
 
         it 'raises an error if model_id is missing' do
-          expect { subject.write_assertions(store_id:, authorization_model_id: nil) }.to raise_error(ArgumentError)
+          expect { subject.write_assertions(assertions:, opts: { store_id:,  authorization_model_id: nil }) }.to raise_error(MissingAuthorizationModelIdError)
         end
 
         it 'raises an error for invalid assertions' do
@@ -270,7 +270,7 @@ describe OpenFga::SdkClient do
                                        message: 'Invalid assertions'
                                      })
 
-          expect { subject.write_assertions({ assertions: [] }, store_id:, authorization_model_id:) }.to raise_error(OpenFga::ApiError)
+          expect { subject.write_assertions(assertions: [], opts: { store_id:, authorization_model_id: }) }.to raise_error(ArgumentError)
         end
       end
     end
