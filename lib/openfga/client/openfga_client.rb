@@ -241,6 +241,44 @@ module OpenFga
       @api_client.expand(store_id(opts), request_body, opts)
     end
 
+    # Lists objects for a given user and relation.
+    # @param user [String] The user for whom to list objects.
+    # @param relation [String||Symbol] The relation to list objects for (e.g., "reader", :writer).
+    # @param type [String] The type of objects to list.
+    # @param opts [Hash] Optional parameters for the request.
+    #   @option opts [String] :store_id The ID of the store where the objects will be listed.
+    #   @option opts [String] :authorization_model_id The ID of the authorization model to use for listing objects.
+    #   @option opts [Hash]   :contextual_tuples Additional contextual tuples to include in the listing.
+    #   @option opts [String] :consistency The consistency level for the listing (e.g., "UNSPECIFIED", "EVENTUAL").
+    #
+    # @raise [ArgumentError] If any of the required parameters (`user`, `relation`, or `type`) are missing.
+    #
+    # @return [ListObjectsResponse] The response containing the list of objects for the specified user and relation.
+    def list_objects(user:, relation:, type:, contextual_tuples: nil, context: nil, opts: {})
+      fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
+      fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
+      fail ArgumentError, "Missing the required parameter 'type'" if type.nil?
+
+      request_body = ListObjectsRequest.new(
+        type:,
+        relation:,
+        user:,
+        authorization_model_id: opts[:authorization_model_id],
+        consistency: opts[:consistency] || 'UNSPECIFIED'
+      )
+
+      # Build the request body
+      unless contextual_tuples.nil?
+        tuple_keys = contextual_tuples[:tuple_keys].map { |tuple_key| TupleKey.new(tuple_key) }
+        request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
+      end
+
+      request_body.context = context unless context.nil?
+
+      # Call the API client to perform the list objects request
+      @api_client.list_objects(store_id(opts), request_body, opts)
+    end
+    
     # List users that have a specific relation with an object
     # Returns a list of all users that have the specified relation with the given object.
     # @param relation [String, Symbol] :relation The relation to check for (e.g., "reader", "writer")

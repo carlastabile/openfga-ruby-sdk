@@ -513,19 +513,6 @@ describe OpenFga::SdkClient do
         expect(response.tree.root.name).to eq('document:1#writer')
       end
 
-      # unit tests for list_objects
-      # List all objects of the given type that the user has a relation with
-      # The ListObjects API returns a list of all the objects of the given type that the user has a relation with.  To arrive at a result, the API uses: an authorization model, explicit tuples written through the Write API, contextual tuples present in the request, and implicit tuples that exist by virtue of applying set theory (such as &#x60;document:2021-budget#viewer@document:2021-budget#viewer&#x60;; the set of users who are viewers of &#x60;document:2021-budget&#x60; are the set of users who are the viewers of &#x60;document:2021-budget&#x60;). An &#x60;authorization_model_id&#x60; may be specified in the body. If it is not specified, the latest authorization model ID will be used. It is strongly recommended to specify authorization model id for better performance. You may also specify &#x60;contextual_tuples&#x60; that will be treated as regular tuples. Each of these tuples may have an associated &#x60;condition&#x60;. You may also provide a &#x60;context&#x60; object that will be used to evaluate the conditioned tuples in the system. It is strongly recommended to provide a value for all the input parameters of all the conditions, to ensure that all tuples be evaluated correctly. By default, the Check API caches results for a short time to optimize performance. You may specify a value of &#x60;HIGHER_CONSISTENCY&#x60; for the optional &#x60;consistency&#x60; parameter in the body to inform the server that higher conisistency is preferred at the expense of increased latency. Consideration should be given to the increased latency if requesting higher consistency. The response will contain the related objects in an array in the \&quot;objects\&quot; field of the response and they will be strings in the object format &#x60;&lt;type&gt;:&lt;id&gt;&#x60; (e.g. \&quot;document:roadmap\&quot;). The number of objects in the response array will be limited by the execution timeout specified in the flag OPENFGA_LIST_OBJECTS_DEADLINE and by the upper bound specified in the flag OPENFGA_LIST_OBJECTS_MAX_RESULTS, whichever is hit first. The objects given will not be sorted, and therefore two identical calls can give a given different set of objects.
-      # @param store_id
-      # @param body
-      # @param [Hash] opts the optional parameters
-      # @return [ListObjectsResponse]
-      describe 'list_objects test' do
-        it 'should work' do
-          # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-        end
-      end
-
       # unit tests for list_users
       # List the users matching the provided filter who have a certain relation to a particular type.
       # The ListUsers API returns a list of all the users of a specific type that have a relation to a given object.  To arrive at a result, the API uses: an authorization model, explicit tuples written through the Write API, contextual tuples present in the request, and implicit tuples that exist by virtue of applying set theory (such as &#x60;document:2021-budget#viewer@document:2021-budget#viewer&#x60;; the set of users who are viewers of &#x60;document:2021-budget&#x60; are the set of users who are the viewers of &#x60;document:2021-budget&#x60;). An &#x60;authorization_model_id&#x60; may be specified in the body. If it is not specified, the latest authorization model ID will be used. It is strongly recommended to specify authorization model id for better performance. You may also specify &#x60;contextual_tuples&#x60; that will be treated as regular tuples. Each of these tuples may have an associated &#x60;condition&#x60;. You may also provide a &#x60;context&#x60; object that will be used to evaluate the conditioned tuples in the system. It is strongly recommended to provide a value for all the input parameters of all the conditions, to ensure that all tuples be evaluated correctly. The response will contain the related users in an array in the \&quot;users\&quot; field of the response. These results may include specific objects, usersets  or type-bound public access. Each of these types of results is encoded in its own type and not represented as a string.In cases where a type-bound public access result is returned (e.g. &#x60;user:*&#x60;), it cannot be inferred that all subjects of that type have a relation to the object; it is possible that negations exist and checks should still be queried on individual subjects to ensure access to that document.The number of users in the response array will be limited by the execution timeout specified in the flag OPENFGA_LIST_USERS_DEADLINE and by the upper bound specified in the flag OPENFGA_LIST_USERS_MAX_RESULTS, whichever is hit first. The returned users will not be sorted, and therefore two identical calls may yield different sets of users.
@@ -539,8 +526,131 @@ describe OpenFga::SdkClient do
         end
       end
     end
-  end
 
+    # unit tests for list_objects
+    # List all objects of the given type that the user has a relation with
+    # The ListObjects API returns a list of all the objects of the given type that the user has a relation with.  To arrive at a result, the API uses: an authorization model, explicit tuples written through the Write API, contextual tuples present in the request, and implicit tuples that exist by virtue of applying set theory (such as &#x60;document:2021-budget#viewer@document:2021-budget#viewer&#x60;; the set of users who are viewers of &#x60;document:2021-budget&#x60; are the set of users who are the viewers of &#x60;document:2021-budget&#x60;). An &#x60;authorization_model_id&#x60; may be specified in the body. If it is not specified, the latest authorization model ID will be used. It is strongly recommended to specify authorization model id for better performance. You may also specify &#x60;contextual_tuples&#x60; that will be treated as regular tuples. Each of these tuples may have an associated &#x60;condition&#x60;. You may also provide a &#x60;context&#x60; object that will be used to evaluate the conditioned tuples in the system. It is strongly recommended to provide a value for all the input parameters of all the conditions, to ensure that all tuples be evaluated correctly. By default, the Check API caches results for a short time to optimize performance. You may specify a value of &#x60;HIGHER_CONSISTENCY&#x60; for the optional &#x60;consistency&#x60; parameter in the body to inform the server that higher conisistency is preferred at the expense of increased latency. Consideration should be given to the increased latency if requesting higher consistency. The response will contain the related objects in an array in the \&quot;objects\&quot; field of the response and they will be strings in the object format &#x60;&lt;type&gt;:&lt;id&gt;&#x60; (e.g. \&quot;document:roadmap\&quot;). The number of objects in the response array will be limited by the execution timeout specified in the flag OPENFGA_LIST_OBJECTS_DEADLINE and by the upper bound specified in the flag OPENFGA_LIST_OBJECTS_MAX_RESULTS, whichever is hit first. The objects given will not be sorted, and therefore two identical calls can give a given different set of objects.
+    # @param user
+    # @param relation
+    # @param type
+    # @param body
+    # @param [Hash] opts the optional parameters
+    # @return [ListObjectsResponse]
+    context 'when running list objects' do
+      let(:user) { 'user:anne' }
+      let(:relation) { 'reader' }
+      let(:type) { 'document' }
+      let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
+      let(:contextual_tuples) do
+        { tuple_keys:
+            [
+              {
+                user: 'user:anne',
+                relation: 'reader',
+                object: 'document:1'
+              }
+            ]
+        }
+      end
+
+      it 'list objects successfully' do
+        stub = stub_request_with_response(method: :post,
+                                          path: "#{stores_url(store_id)}/list-objects",
+                                          status: 200,
+                                          request_body: {
+                                            type:,
+                                            relation:,
+                                            user:,
+                                            authorization_model_id:,
+                                            consistency: 'MINIMIZE_LATENCY'
+                                          },
+                                          response_body: {
+                                            objects: %w[document:2021-budget document:2022-budget]
+                                          })
+
+        response = subject.list_objects(user:, relation:, type:, opts: {
+          authorization_model_id:, consistency: 'MINIMIZE_LATENCY'
+        })
+
+        expect(stub).to have_been_requested
+        expect(response).to be_a(OpenFga::ListObjectsResponse)
+        expect(response.objects).to include('document:2021-budget')
+        expect(response.objects.size).to eq(2)
+      end
+
+      it 'raises an error if store_id is missing' do
+        expect { subject_no_store.list_objects(user:, relation:, type:) }.to raise_error(MissingStoreIdError)
+      end
+
+      it 'raises an error if user is missing' do
+        expect { subject.list_objects(user: nil, relation:, type:) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if relation is missing' do
+        expect { subject.list_objects(user:, relation: nil, type:) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if type is missing' do
+        expect { subject.list_objects(user:, relation:, type: nil) }.to raise_error(ArgumentError)
+      end
+
+      it 'list objects with contextual tuples' do
+        stub = stub_request_with_response(method: :post,
+                                          path: "#{stores_url(store_id)}/list-objects",
+                                          status: 200,
+                                          request_body: {
+                                            type:,
+                                            relation:,
+                                            user:,
+                                            authorization_model_id:,
+                                            contextual_tuples:,
+                                            consistency: 'MINIMIZE_LATENCY'
+                                          },
+                                          response_body: {
+                                            objects: %w[document:2021-budget document:2022-budget]
+                                          })
+
+        response = subject.list_objects(user:, relation:, type:, contextual_tuples:,
+                                  opts: { authorization_model_id:,
+                                          consistency: 'MINIMIZE_LATENCY'
+                                  })
+
+        expect(stub).to have_been_requested
+        expect(response).to be_a(OpenFga::ListObjectsResponse)
+        expect(response.objects).to include('document:2022-budget')
+        expect(response.objects.size).to eq(2)
+      end
+
+      it 'list objects with context' do
+        stub = stub_request_with_response(method: :post,
+                                          path: "#{stores_url(store_id)}/list-objects",
+                                          status: 200,
+                                          request_body: {
+                                            type:,
+                                            relation:,
+                                            user:,
+                                            authorization_model_id:,
+                                            contextual_tuples:,
+                                            context: { view_count: 100 },
+                                            consistency: 'MINIMIZE_LATENCY'
+                                          },
+                                          response_body: {
+                                            objects: %w[document:2021-budget document:2022-budget]
+                                          })
+
+        response = subject.list_objects(user:, relation:, type:, contextual_tuples:,
+                                        context: { view_count: 100 },
+                                        opts: { authorization_model_id:,
+                                                consistency: 'MINIMIZE_LATENCY'
+                                        })
+
+        expect(stub).to have_been_requested
+        expect(response).to be_a(OpenFga::ListObjectsResponse)
+        expect(response.objects).to include('document:2022-budget')
+        expect(response.objects.size).to eq(2)
+      end
+    end
+  end
 
 
   describe 'Stores' do
