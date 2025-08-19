@@ -240,7 +240,43 @@ module OpenFga
       # Call the API client to perform the expansion
       @api_client.expand(store_id(opts), request_body, opts)
     end
-    
+
+    # List users that have a specific relation with an object
+    # Returns a list of all users that have the specified relation with the given object.
+    # @param relation [String, Symbol] :relation The relation to check for (e.g., "reader", "writer")
+    # @param object [String] :object The object to check relations against
+    # @param user_filters [Array<Hash>] :user_filters Filter criteria for the users to return
+    # @param contextual_tuples [Array<Hash>] :contextual_tuples Additional contextual tuples to include in the query
+    # @param [Hash] opts The optional parameters
+    # @option opts [String] :authorization_model_id The ID of the authorization model to use for the query
+    # @option opts [String] :consistency The consistency level for the query (defaults to 'UNSPECIFIED')
+    # @option opts [Hash] :context Additional context for the query
+    # @option opts [String] :store_id The store ID to query users from
+    # @raise [ArgumentError] If the required parameter 'relation' is missing
+    # @raise [ArgumentError] If the required parameter 'object' is missing
+    # @raise [ArgumentError] If the required parameter 'user_filters' is missing
+    # @return [ListUsersResponse] The response containing the list of users
+    def list_users(relation:, object:, user_filters: [], contextual_tuples: nil, context: nil, opts: {})
+      fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
+      fail ArgumentError, "Missing the required parameter 'object'" if object.nil?
+
+      request_body = ListUsersRequest.new(
+        relation: relation.to_s,
+        object:,
+        context:,
+        user_filters: (user_filters || []).map { |filter| UserTypeFilter.new(filter) },
+        authorization_model_id: opts[:authorization_model_id],
+      )
+
+      # Build the request body
+      if contextual_tuples
+        tuples = contextual_tuples.map { |tuple| TupleKey.new(tuple) }
+        request_body.contextual_tuples = tuples
+      end
+
+      @api_client.list_users(store_id(opts), request_body, opts)
+    end
+
     private
       # Returns the store ID from the options or configuration.
       # Raises MissingStoreIdError if the store ID is not provided.

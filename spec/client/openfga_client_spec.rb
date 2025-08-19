@@ -1041,5 +1041,115 @@ describe OpenFga::SdkClient do
         end
       end
     end
+
+    describe 'the list-users endpoint' do
+      it 'should successfully make the request' do
+        expected_request = {
+          object: 'group:1',
+          relation: :member,
+          user_filters: [{
+                           type: 'user'
+                         }],
+          authorization_model_id:,
+          consistency: 'UNSPECIFIED',
+        }
+
+        opts = {
+          authorization_model_id:,
+        }
+
+        stub = stub_request_with_response(
+          path: "#{stores_url(store_id)}/list-users",
+          method: :post,
+          status: 200,
+          request_body: expected_request,
+          response_body: {
+            users: []
+          },
+        )
+
+        subject.list_users(
+          relation: :member,
+          object: 'group:1',
+          user_filters: [{ type: 'user' }],
+          opts:
+        )
+
+        expect(stub).to have_been_requested
+      end
+
+      it 'should successfully make the request with all parameters' do
+        expected_request = {
+          object: 'group:1',
+          relation: :member,
+          user_filters: [{
+                           type: 'user'
+                         }],
+          authorization_model_id:,
+          contextual_tuples: [{
+                                user: 'user:john',
+                                relation: 'member',
+                                object: 'group:2',
+                                condition: {
+                                  name: 'condition_1',
+                                  context: {}
+                                }
+                              }],
+          context: {
+            my_key: 'value_1'
+          },
+          consistency: 'UNSPECIFIED',
+        }
+
+        opts = {
+          authorization_model_id:,
+        }
+
+        stub = stub_request_with_response(
+          path: "#{stores_url(store_id)}/list-users",
+          method: :post,
+          status: 200,
+          request_body: expected_request,
+          response_body: {
+            users: []
+          },
+        )
+
+        subject.list_users(
+          relation: :member,
+          object: 'group:1',
+          user_filters: [{
+                           type: 'user'
+                         }],
+          contextual_tuples: [{
+                                user: 'user:john',
+                                relation: 'member',
+                                object: 'group:2',
+                                condition: {
+                                  name: 'condition_1',
+                                  context: {}
+                                }
+                              }],
+          context: {
+            my_key: 'value_1'
+          },
+          opts:
+        )
+
+        expect(stub).to have_been_requested
+      end
+
+      it 'should raise an error if relation is missing' do
+        expect { subject.list_users(relation: nil, object: 'group:1', user_filters: [{ type: 'user' }]) }.to raise_error(ArgumentError)
+      end
+
+      it 'should raise an error if object is missing' do
+        expect { subject.list_users(relation: :member, object: nil, user_filters: [{ type: 'user' }]) }.to raise_error(ArgumentError)
+      end
+
+      it 'should raise an error if store_id is missing' do
+        expect { subject_no_store.list_users(relation: :member, object: 'group:1', user_filters: [{ type: 'user' }]) }.to raise_error(MissingStoreIdError)
+      end
+    end
   end
 end
