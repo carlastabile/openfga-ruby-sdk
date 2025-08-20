@@ -283,9 +283,466 @@ describe OpenFga::SdkClient do
     # @param body
     # @param [Hash] opts the optional parameters
     # @return [BatchCheckResponse]
-    describe 'batch_check test' do
-      it 'should work' do
-        # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    context 'when running a batch check' do
+      let(:checks) do
+        [
+          {
+            tuple_key: {
+              user: 'user:anne',
+              relation: :reader,
+              object: 'document:2021-budget'
+            },
+            correlation_id: '01JA8PM3QM7VBPGB8KMPK8SBD5',
+            context: {}
+          },
+          {
+            tuple_key: {
+              user: 'user:bob',
+              relation: :reader,
+              object: 'document:2021-budget'
+            },
+            correlation_id: '01JA8PMM6A90NV5ET0F28CYSZQ',
+            context: {}
+          }
+        ]
+      end
+      let(:checks_with_contextual_tuples) do
+        [
+          {
+            tuple_key: {
+              user: 'user:anne',
+              relation: :reader,
+              object: 'document:2021-budget'
+            },
+            correlation_id: '01JA8PM3QM7VBPGB8KMPK8SBD5',
+            contextual_tuples: {
+              tuple_keys: [
+                {
+                  user: 'user:anne',
+                  relation: 'reader',
+                  object: 'document:2021-budget',
+                  condition: {
+                    name: 'condition1',
+                    context: {}
+                  }
+                }
+              ]
+            },
+            context: {}
+          }
+        ]
+      end
+      let(:response_body) do
+        {
+          result: {
+            '01JA8PM3QM7VBPGB8KMPK8SBD5' => { allowed: true, error: { message: '' } },
+            '01JA8PMM6A90NV5ET0F28CYSZQ' => { allowed: false, error: { message: '' } }
+          }
+        }
+      end
+
+      it 'returns batch check results successfully' do
+        stub_request_with_response(
+          method: :post,
+          path: "#{stores_url(store_id)}/batch-check",
+          status: 200,
+          request_body: { checks:, consistency: 'UNSPECIFIED' },
+          response_body:
+        )
+
+        result = subject.batch_check(checks:)
+        expect(result).to be_a(OpenFga::BatchCheckResponse)
+        expect(result.result['01JA8PM3QM7VBPGB8KMPK8SBD5'].allowed).to be true
+        expect(result.result['01JA8PMM6A90NV5ET0F28CYSZQ'].allowed).to be false
+      end
+
+      it 'returns batch check results successfully with contextual tuples' do
+        stub_request_with_response(
+          method: :post,
+          path: "#{stores_url(store_id)}/batch-check",
+          status: 200,
+          request_body: { checks: checks_with_contextual_tuples, consistency: 'UNSPECIFIED' },
+          response_body: {
+            result: {
+              '01JA8PM3QM7VBPGB8KMPK8SBD5' => { allowed: true, error: { message: '' } }
+            }
+          })
+
+        result = subject.batch_check(checks: checks_with_contextual_tuples)
+        expect(result).to be_a(OpenFga::BatchCheckResponse)
+        expect(result.result['01JA8PM3QM7VBPGB8KMPK8SBD5'].allowed).to be true
+      end
+
+      it 'raises an error if checks are missing' do
+        expect { subject.batch_check(checks: []) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if correlation_id is missing' do
+        expect { subject.batch_check(checks: [ { tuple_key: {}, correlation_id: nil } ]) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if tuple_key is missing' do
+        expect { subject.batch_check(checks: [ tuple_key: nil, correlation_id: '01JA8PMM6A90NV5ET0F28CYSZQ' ]) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if correlation_id has the wrong format' do
+        expect { subject.batch_check(checks: [ tuple_key: {}, correlation_id: '' ]) }.to raise_error(ArgumentError)
+      end
+
+      it 'raises an error if store_id is missing' do
+        expect { subject_no_store.batch_check(checks:) }.to raise_error(MissingStoreIdError)
+      end
+
+      context 'with max_batch_size parameter' do
+        let(:large_check_set) do
+          (1..75).map do |i|
+            {
+              tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+              correlation_id: "check-#{i}"
+            }
+          end
+        end
+
+        it 'splits large check sets into multiple batches with default batch size (50)' do
+          # First batch: checks 1-50
+          first_batch_request = {
+            checks: (1..50).map do |i|
+              {
+                tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+                correlation_id: "check-#{i}"
+              }
+            end,
+            consistency: 'UNSPECIFIED'
+          }
+
+          first_batch_response = {
+            result: (1..50).map { |i| ["check-#{i}", { allowed: true }] }.to_h
+          }
+
+          # Second batch: checks 51-75
+          second_batch_request = {
+            checks: (51..75).map do |i|
+              {
+                tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+                correlation_id: "check-#{i}"
+              }
+            end,
+            consistency: 'UNSPECIFIED'
+          }
+
+          second_batch_response = {
+            result: (51..75).map { |i| ["check-#{i}", { allowed: true }] }.to_h
+          }
+
+          # Stub both requests
+          stub_request_with_response(
+            method: :post,
+            path: "#{stores_url(store_id)}/batch-check",
+            status: 200,
+            request_body: first_batch_request,
+            response_body: first_batch_response
+          )
+
+          stub_request_with_response(
+            method: :post,
+            path: "#{stores_url(store_id)}/batch-check",
+            status: 200,
+            request_body: second_batch_request,
+            response_body: second_batch_response
+          )
+
+          result = subject.batch_check(checks: large_check_set)
+
+          expect(result).to be_a(OpenFga::BatchCheckResponse)
+          expect(result.result.size).to eq(75)
+          expect(result.result).to include('check-1', 'check-50', 'check-52', 'check-75')
+        end
+
+        it 'respects custom max_batch_size parameter' do
+          # With max_batch_size: 25, we should get 3 batches for 75 checks
+          batch_requests = [
+            { checks: (1..25).map { |i| { tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" }, correlation_id: "check-#{i}" } } },
+            { checks: (26..50).map { |i| { tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" }, correlation_id: "check-#{i}" } } },
+            { checks: (51..75).map { |i| { tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" }, correlation_id: "check-#{i}" } } }
+          ]
+
+          # Stub all three requests
+          batch_requests.each do |request|
+            response = {
+              result: request[:checks].map { |check| [check[:correlation_id], { allowed: true }] }.to_h
+            }
+
+            stub_request_with_response(
+              method: :post,
+              path: "#{stores_url(store_id)}/batch-check",
+              status: 200,
+              request_body: request.merge(consistency: 'UNSPECIFIED'),
+              response_body: response
+            )
+          end
+
+          result = subject.batch_check(
+            checks: large_check_set,
+            opts: { max_batch_size: 25 }
+          )
+
+          expect(result).to be_a(OpenFga::BatchCheckResponse)
+          expect(result.result.size).to eq(75)
+          # Verify all correlation_ids are present
+          (1..75).each do |i|
+            expect(result.result).to include("check-#{i}")
+          end
+        end
+
+        it 'uses single batch for small check sets under the limit' do
+          small_check_set = (1..10).map do |i|
+            {
+              tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+              correlation_id: "check-#{i}"
+            }
+          end
+
+          single_batch_request = {
+            checks: small_check_set.map do |check|
+              {
+                tuple_key: check[:tuple_key],
+                correlation_id: check[:correlation_id]
+              }
+            end,
+            consistency: 'UNSPECIFIED'
+          }
+
+          single_batch_response = {
+            result: (1..10).map { |i| ["check-#{i}", { allowed: true }] }.to_h
+          }
+
+          stub_request_with_response(
+            method: :post,
+            path: "#{stores_url(store_id)}/batch-check",
+            status: 200,
+            request_body: single_batch_request,
+            response_body: single_batch_response
+          )
+
+          result = subject.batch_check(checks: small_check_set)
+
+          expect(result).to be_a(OpenFga::BatchCheckResponse)
+          expect(result.result.size).to eq(10)
+        end
+      end
+
+      context 'with max_parallel_requests parameter' do
+        let(:concurrent_check_set) do
+          (1..20).map do |i|
+            {
+              tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+              correlation_id: "check-#{i}"
+            }
+          end
+        end
+
+        it 'processes batches concurrently with custom max_parallel_requests' do
+          # With 20 checks and max_batch_size: 5, we get 4 batches
+          (1..4).each do |batch_num|
+            start_idx = (batch_num - 1) * 5 + 1
+            end_idx = batch_num * 5
+
+            batch_request = {
+              checks: (start_idx..end_idx).map do |i|
+                {
+                  tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+                  correlation_id: "check-#{i}"
+                }
+              end,
+              consistency: 'UNSPECIFIED'
+            }
+
+            batch_response = {
+              result: (start_idx..end_idx).map { |i| ["check-#{i}", { allowed: true }] }.to_h
+            }
+
+            stub_request_with_response(
+              method: :post,
+              path: "#{stores_url(store_id)}/batch-check",
+              status: 200,
+              request_body: batch_request,
+              response_body: batch_response
+            )
+          end
+
+          result = subject.batch_check(
+            checks: concurrent_check_set,
+            opts: { max_batch_size: 5, max_parallel_requests: 2 }
+          )
+
+          expect(result).to be_a(OpenFga::BatchCheckResponse)
+          expect(result.result.size).to eq(20)
+          # Verify all correlation_ids are present
+          (1..20).each do |i|
+            expect(result.result).to include("check-#{i}")
+          end
+        end
+
+        it 'respects max_parallel_requests = 1 for sequential processing' do
+          # This should process batches one at a time
+          sequential_check_set = (1..15).map do |i|
+            {
+              tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+              correlation_id: "check-#{i}"
+            }
+          end
+
+          # With max_batch_size: 5, we get 3 batches
+          (1..3).each do |batch_num|
+            start_idx = (batch_num - 1) * 5 + 1
+            end_idx = batch_num * 5
+
+            batch_request = {
+              checks: (start_idx..end_idx).map do |i|
+                {
+                  tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+                  correlation_id: "check-#{i}"
+                }
+              end,
+              consistency: 'UNSPECIFIED'
+            }
+
+            batch_response = {
+              result: (start_idx..end_idx).map { |i| ["check-#{i}", { allowed: true }] }.to_h
+            }
+
+            stub_request_with_response(
+              method: :post,
+              path: "#{stores_url(store_id)}/batch-check",
+              status: 200,
+              request_body: batch_request,
+              response_body: batch_response
+            )
+          end
+
+          result = subject.batch_check(
+            checks: sequential_check_set,
+            opts: { max_batch_size: 5, max_parallel_requests: 1 }
+          )
+
+          expect(result).to be_a(OpenFga::BatchCheckResponse)
+          expect(result.result.size).to eq(15)
+        end
+      end
+
+      context 'with both parameters combined' do
+        it 'correctly applies both max_batch_size and max_parallel_requests' do
+          # 100 checks with batch size 20 = 5 batches, max 3 concurrent
+          large_dataset = (1..100).map do |i|
+            {
+              tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+              correlation_id: "check-#{i}"
+            }
+          end
+
+          # Create 5 batches of 20 checks each
+          (1..5).each do |batch_num|
+            start_idx = (batch_num - 1) * 20 + 1
+            end_idx = batch_num * 20
+
+            batch_request = {
+              checks: (start_idx..end_idx).map do |i|
+                {
+                  tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+                  correlation_id: "check-#{i}"
+                }
+              end,
+              consistency: 'UNSPECIFIED'
+            }
+
+            batch_response = {
+              result: (start_idx..end_idx).map { |i| ["check-#{i}", { allowed: true }] }.to_h
+            }
+
+            stub_request_with_response(
+              method: :post,
+              path: "#{stores_url(store_id)}/batch-check",
+              status: 200,
+              request_body: batch_request,
+              response_body: batch_response
+            )
+          end
+
+          result = subject.batch_check(
+            checks: large_dataset,
+            opts: { max_batch_size: 20, max_parallel_requests: 3 }
+          )
+
+          expect(result).to be_a(OpenFga::BatchCheckResponse)
+          expect(result.result.size).to eq(100)
+          # Verify all correlation_ids are present
+          (1..100).each do |i|
+            expect(result.result).to include("check-#{i}")
+          end
+        end
+      end
+
+      context 'error handling with concurrent processing' do
+        let(:error_prone_checks) do
+          (1..10).map do |i|
+            {
+              tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+              correlation_id: "check-#{i}"
+            }
+          end
+        end
+
+        it 'handles partial failures gracefully when some batches fail' do
+          # First batch succeeds
+          first_batch_request = {
+            checks: (1..5).map do |i|
+              {
+                tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+                correlation_id: "check-#{i}"
+              }
+            end,
+            consistency: 'UNSPECIFIED'
+          }
+
+          first_batch_response = {
+            result: (1..5).map { |i| ["check-#{i}", { allowed: true }] }.to_h
+          }
+
+          # Second batch fails
+          second_batch_request = {
+            checks: (6..10).map do |i|
+              {
+                tuple_key: { user: "user:user#{i}", relation: 'reader', object: "document:#{i}" },
+                correlation_id: "check-#{i}"
+              }
+            end,
+            consistency: 'UNSPECIFIED'
+          }
+
+          stub_request_with_response(
+            method: :post,
+            path: "#{stores_url(store_id)}/batch-check",
+            status: 200,
+            request_body: first_batch_request,
+            response_body: first_batch_response
+          )
+
+          stub_request(:post, "#{stores_url(store_id)}/batch-check")
+            .with(body: hash_including(second_batch_request))
+            .to_return(status: 500, body: '{"error": "Internal server error"}')
+
+          # Should not raise error, but should include results from successful batch
+          result = subject.batch_check(
+            checks: error_prone_checks,
+            opts: { max_batch_size: 5 }
+          )
+
+          expect(result).to be_a(OpenFga::BatchCheckResponse)
+          # Should have results from the first batch only
+          expect(result.result.size).to eq(5)
+          expect(result.result).to include('check-1', 'check-5')
+          expect(result.result).not_to include('check-6', 'check-10')
+        end
       end
     end
 
@@ -297,8 +754,8 @@ describe OpenFga::SdkClient do
     # @param [Hash] opts the optional parameters
     # @return [CheckResponse]
     context 'when running a check request' do
-      let(:contextual_tuples) do 
-          { 
+      let(:contextual_tuples) do
+          {
             tuple_keys: [
               {
                 user: 'user:anne',
@@ -352,19 +809,19 @@ describe OpenFga::SdkClient do
       end
 
       it 'should raise an error if store_id is missing' do
-        expect { subject.check(store_id: nil, user: 'user:anne', relation: :reader, object: 'roadmap') }.to raise_error(ArgumentError)
+        expect { subject_no_store.check(user: 'user:anne', relation: :reader, object: 'roadmap') }.to raise_error(MissingStoreIdError)
       end
 
       it 'should raise an error if user is missing' do
-        expect { subject.check(store_id:, user: nil, relation: :reader, object: 'roadmap') }.to raise_error(ArgumentError)
+        expect { subject.check(user: nil, relation: :reader, object: 'roadmap') }.to raise_error(ArgumentError)
       end
 
       it 'should raise an error if relation is missing' do
-        expect { subject.check(store_id:, user: 'user:anne', relation: nil, object: 'roadmap') }.to raise_error(ArgumentError)
+        expect { subject.check(user: 'user:anne', relation: nil, object: 'roadmap') }.to raise_error(ArgumentError)
       end
 
       it 'should raise an error if object is missing' do
-        expect { subject.check(store_id: nil, user: 'user:anne', relation: :reader, object: nil) }.to raise_error(ArgumentError)
+        expect { subject.check(user: 'user:anne', relation: :reader, object: nil) }.to raise_error(ArgumentError)
       end
 
       it 'should work with contextual tuples' do
@@ -652,7 +1109,6 @@ describe OpenFga::SdkClient do
     end
   end
 
-
   describe 'Stores' do
     # unit tests for create_store
     # Create a store
@@ -777,7 +1233,6 @@ describe OpenFga::SdkClient do
       end
     end
   end
-
 
   describe 'Tuples' do
     describe 'when reading changes' do
@@ -1005,9 +1460,8 @@ describe OpenFga::SdkClient do
             request_body: expected_request,
             response_body: {},
           )
-          
-          subject.write(writes:, opts:)
 
+          subject.write(writes:, opts:)
           expect(stub).to have_been_requested
         end
 
@@ -1027,7 +1481,7 @@ describe OpenFga::SdkClient do
             request_body: expected_request,
             response_body: {},
           )
-          
+
           subject.write(writes:, opts:)
 
           expect(stub).to have_been_requested
@@ -1065,7 +1519,6 @@ describe OpenFga::SdkClient do
             request_body: expected_request,
             response_body: {},
           )
-          
           subject.write(deletes:, opts:)
 
           expect(stub).to have_been_requested
@@ -1087,7 +1540,7 @@ describe OpenFga::SdkClient do
             request_body: expected_request,
             response_body: {},
           )
-          
+
           subject.write(deletes:, opts:)
 
           expect(stub).to have_been_requested
@@ -1130,7 +1583,7 @@ describe OpenFga::SdkClient do
             request_body: expected_request,
             response_body: {},
           )
-          
+
           subject.write(
             writes: {
               tuple_keys: [{

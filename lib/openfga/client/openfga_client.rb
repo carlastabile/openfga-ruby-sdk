@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+#
+require 'concurrent'
+require 'set'
+
 module OpenFga
   class SdkClient
     PAGE_SIZE = 50
@@ -91,6 +95,8 @@ module OpenFga
       @api_client.read_authorization_models(store_id(opts), opts)
     end
 
+
+
     # Checks whether a specific relationship exists in the store.
     #
     # @param user [String] The user involved in the relationship.
@@ -126,6 +132,72 @@ module OpenFga
       end
 
       @api_client.check(store_id(opts), request_body, opts)
+    end
+
+    # Performs multiple relationship checks in a single batch request.
+    #
+    # @param checks [Array<Hash>] An array of check items, each containing:
+    #   @option checks [Hash] :tuple_key The tuple key for the relationship to check, which must include:
+    #     - :user [String]: The user involved in the relationship.
+    #     - :relation [String, Symbol]: The relation to check (e.g. "reader" or :owner).
+    #     - :object [String]: The object involved in the relationship.
+    #   @option checks [String] :correlation_id A unique identifier for correlating the request with the response (max 36 chars, alphanumeric + hyphens).
+    #   @option checks [Hash] :contextual_tuples (optional) Additional contextual tuples to include in the check.
+    #   @option checks [Hash] :context (optional) Additional context for the check.
+    # @param opts [Hash] Optional parameters for the batch check.
+    #   @option opts [String] :authorization_model_id The ID of the authorization model
+    #   @option opts [String] :consistency The consistency level for the checks
+    #   @option opts [Integer] :max_parallel_requests Maximum concurrent requests (default: 10)
+    #   @option opts [Integer] :max_batch_size Maximum checks per batch (default: 50)
+    #
+    # @raise [ArgumentError] If the checks array is empty, or if any check item is missing required parameters.
+    #
+    # @return [BatchCheckResponse] The result of the batch check operation with results keyed by correlation_id.
+    def batch_check(checks:, opts: {})
+      fail ArgumentError, "Missing the required parameter 'checks'" if checks.nil? || checks.empty?
+
+      # Configuration with defaults matching Python SDK
+      max_parallel_requests = opts[:max_parallel_requests] || 10
+      max_batch_size = opts[:max_batch_size] || 50
+
+      # Validate all checks first and check for duplicates
+      correlation_ids = Set.new
+      checks.each_with_index do |check, index|
+        fail ArgumentError, "Missing 'tuple_key' in check item at index #{index}" if check[:tuple_key].nil?
+        fail ArgumentError, "Missing 'correlation_id' in check item at index #{index}" if check[:correlation_id].nil?
+
+        # Validate correlation_id format
+        correlation_id = check[:correlation_id].to_s
+        unless correlation_id.match?(/^[\w\d-]{1,36}$/)
+          fail ArgumentError, "correlation_id must be alphanumeric with hyphens only, max 36 characters: #{correlation_id}"
+        end
+
+        # Check for duplicates
+        if correlation_ids.include?(correlation_id)
+          fail ArgumentError, "Duplicate correlation_id found: #{correlation_id}"
+        end
+        correlation_ids.add(correlation_id)
+      end
+
+      # If we have fewer checks than the batch limit, use simple approach
+      if checks.length <= max_batch_size
+        return execute_single_batch_check(checks, opts)
+      end
+
+      # Split checks into batches and process concurrently
+      check_batches = checks.each_slice(max_batch_size).to_a
+      all_results = process_batches_concurrently(check_batches, max_parallel_requests, opts)
+
+      # Merge all batch results
+      merged_results = {}
+      all_results.each do |batch_response|
+        if batch_response&.result
+          merged_results.merge!(batch_response.result)
+        end
+      end
+
+      # Return a BatchCheckResponse with merged results
+      BatchCheckResponse.new(result: merged_results)
     end
 
     # Read changes
@@ -315,25 +387,105 @@ module OpenFga
       @api_client.list_users(store_id(opts), request_body, opts)
     end
 
-    private
-      # Returns the store ID from the options or configuration.
-      # Raises MissingStoreIdError if the store ID is not provided.
-      # @param opts [Hash, nil] Optional parameters that may include :store_id.
-      # @return [String] The store ID.
-      def store_id(opts = nil)
-        id = (opts || {})[:store_id] || @config[:store_id]
-        fail MissingStoreIdError unless id
-        id
+private
+
+  # Executes a single batch check (used when no splitting is needed)
+  def execute_single_batch_check(checks, opts)
+    check_items = build_check_items(checks)
+    request_body = build_batch_request(check_items, opts)
+    @api_client.batch_check(store_id(opts), request_body, opts)
+  end
+
+  # Processes multiple batches concurrently using concurrent-ruby thread pool and futures
+  def process_batches_concurrently(batches, max_concurrent, opts)
+    # Use concurrent-ruby's thread pool for better performance and resource management
+    pool = Concurrent::FixedThreadPool.new(max_concurrent)
+
+    begin
+      # Create futures for each batch
+      futures = batches.map do |batch|
+        Concurrent::Future.execute(executor: pool) do
+          execute_single_batch_check(batch, opts)
+        rescue => e
+          # Log error but don't fail entire operation
+          warn "Batch check failed: #{e.message}"
+          # Return empty result for this batch
+          BatchCheckResponse.new(result: {})
+        end
       end
 
-      # Returns the authorization model ID from the options or configuration.
-      # Raises MissingAuthorizationModelIdError if the authorization model ID is not provided.
-      # @param opts [Hash, nil] Optional parameters that may include :authorization_model_id.
-      # @return [String] The authorization model ID.
-      def authorization_model_id(opts = nil)
-        id = (opts || {})[:authorization_model_id] || @config[:authorization_model_id]
-        fail MissingAuthorizationModelIdError unless id
-        id
+      # Wait for all futures to complete and collect results
+      futures.map(&:value!)
+    ensure
+      # Shutdown the thread pool
+      pool.shutdown
+      pool.wait_for_termination
+    end
+  end
+
+  # Builds check items from the check array
+  def build_check_items(checks)
+    checks.map do |check|
+      tuple_key = CheckRequestTupleKey.new({
+        user: check[:tuple_key][:user],
+        relation: check[:tuple_key][:relation].to_s,
+        object: check[:tuple_key][:object]
+      })
+
+      batch_check_item = BatchCheckItem.new({
+        tuple_key:,
+        correlation_id: check[:correlation_id].to_s
+      })
+
+      # Add contextual tuples if provided
+      if check.include?(:contextual_tuples)
+        contextual_tuples = check[:contextual_tuples]
+        tuple_keys = contextual_tuples[:tuple_keys].map { |tk| TupleKey.new(tk) }
+        batch_check_item.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
       end
+
+      # Add context if provided
+      if check.include?(:context)
+        batch_check_item.context = check[:context]
+      end
+
+      batch_check_item
+    end
+  end
+
+  # Builds the batch check request with options
+  def build_batch_request(check_items, opts)
+    request_body = BatchCheckRequest.new({ checks: check_items })
+
+    if opts.include?(:authorization_model_id)
+      request_body.authorization_model_id = opts[:authorization_model_id]
+    end
+
+    if opts.include?(:consistency)
+      request_body.consistency = opts[:consistency]
+    end
+
+    request_body
+  end
+
+  # Returns the store ID from the options or configuration.
+  # Raises MissingStoreIdError if the store ID is not provided.
+  # @param opts [Hash, nil] Optional parameters that may include :store_id.
+  # @return [String] The store ID.
+  def store_id(opts = nil)
+    id = (opts || {})[:store_id] || @config[:store_id]
+    fail MissingStoreIdError unless id
+    id
+  end
+
+  # Returns the authorization model ID from the options or configuration.
+  # Raises MissingAuthorizationModelIdError if the authorization model ID is not provided.
+  # @param opts [Hash, nil] Optional parameters that may include :authorization_model_id.
+  # @return [String] The authorization model ID.
+  def authorization_model_id(opts = nil)
+    id = (opts || {})[:authorization_model_id] || @config[:authorization_model_id]
+    fail MissingAuthorizationModelIdError unless id
+    id
+  end
   end
 end

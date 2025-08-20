@@ -8,6 +8,7 @@ gemfile do
   gem 'json'
   gem 'openfga', '~> 0.0.1', path: File.expand_path('../../../', __dir__)
   gem 'logger'
+  gem 'ulid'
 end
 
 # OpenFGA Ruby SDK Example
@@ -50,7 +51,7 @@ class OpenFgaExample
 
     # 4. Authorization Checks
     check_example
-    # batch_check_example
+    batch_check_example
 
     # 5. Advanced Queries
     expand_example
@@ -658,6 +659,55 @@ class OpenFgaExample
         opts: { authorization_model_id: @authorization_model_id }
       )
       @logger.info "Can Eve write repo:ruby-sdk? #{response.allowed}"
+    end
+
+    def batch_check_example
+      @logger.info '=== Batch Check ==='
+
+      @logger.info 'Sending a batch check request'
+      response = @client.batch_check(
+        checks: [
+          {
+            tuple_key: {
+              user: 'user:alice',
+              relation: :reader,
+              object: 'repo:ruby-sdk',
+            },
+            correlation_id: ULID.generate
+          },
+          {
+            tuple_key: {
+              user: 'user:eve',
+              relation: :writer,
+              object: 'repo:python-sdk',
+            },
+            correlation_id: ULID.generate
+          },
+          {
+            tuple_key: {
+              user: 'user:dave',
+              relation: :reader,
+              object: 'repo:python-sdk',
+            },
+            correlation_id: ULID.generate
+          }
+        ],
+        opts: {
+          authorization_model_id: @authorization_model_id,
+          max_batch_size: 100,
+          max_parallel_requests: 10
+        }
+      )
+
+      @logger.info "Batch check completed with #{response.result.length} results"
+
+      response.result.each do |correlation_id, result|
+        @logger.info "  Correlation ID: #{correlation_id} - Allowed: #{result.allowed}"
+
+        if result.error
+          @logger.error "    Error: #{result.error.message}"
+        end
+      end
     end
 
     def expand_example

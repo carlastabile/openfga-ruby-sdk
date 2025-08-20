@@ -23,7 +23,7 @@ bundle install
 
 Start OpenFGA server:
 ```bash
-docker run -p 8080:8080 openfga/openfga run
+make start-openfga
 ```
 
 ## Examples
@@ -41,8 +41,7 @@ This example demonstrates:
 
 Run the example:
 ```bash
-cd example1
-ruby example1.rb
+make run-example1
 ```
 
 ## Configuration
