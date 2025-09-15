@@ -7,18 +7,34 @@ require 'set'
 module OpenFga
   class SdkClient
     PAGE_SIZE = 50
+    CREDENTIALS_METHODS = %i[none api_token].freeze
 
     def initialize(config = {})
       raise ConfigurationNilError.new(:api_url) unless config[:api_url]
 
       @config = config
-      
+
+      @config[:credentials] ||= {
+        method: :none
+      }
+
+      credentials = @config[:credentials]
+      validate_credentials_config(credentials)
+
       api_client_config = Configuration.new do |c|
         c.server_index = nil
         c.host = @config[:api_url]
       end
 
-      @api_client = OpenFga::OpenFgaApi.new(ApiClient.new api_client_config)
+      api_client = ApiClient.new(api_client_config)
+
+      if credentials[:api_token]
+        api_client.default_headers = api_client.default_headers.merge(
+          'Authorization' => "Bearer #{credentials[:api_token]}"
+        )
+      end
+
+      @api_client = OpenFga::OpenFgaApi.new(api_client)
     end
 
     # Create a store
@@ -388,6 +404,18 @@ module OpenFga
     end
 
 private
+
+  def validate_credentials_config(credentials_config)
+    fail ArgumentError, "Missing the required parameter 'credentials_config' if credentials_config.nil?" if credentials_config.nil?
+
+    unless CREDENTIALS_METHODS.include?(credentials_config[:method])
+      fail ConfigurationError, "Only the '#{CREDENTIALS_METHODS.join(', ')}' credentials methods are supported, but '#{credentials_config[:method]}' was found"
+    end
+
+    if credentials_config[:method] == :api_token && credentials_config[:api_token].nil?
+      fail ConfigurationError, 'credentials[:api_token] is required when using credentials[:method] = :api_token'
+    end
+  end
 
   # Executes a single batch check (used when no splitting is needed)
   def execute_single_batch_check(checks, opts)

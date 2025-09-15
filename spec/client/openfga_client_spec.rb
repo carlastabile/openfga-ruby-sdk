@@ -25,10 +25,95 @@ describe OpenFga::SdkClient do
         expect(err.property).to be :api_url
       end
     end
+
+    it 'checks for valid credentials method' do
+      config = {
+        api_url:,
+        credentials: {
+          method: :random_method
+        }
+      }
+
+      expect { OpenFga::SdkClient.new(config) }.to raise_error(
+        ConfigurationError,
+        /Only the '.+?' credentials methods are supported/)
+    end
+
+    it 'checks for valid api token with credentials method: :api_token' do
+      config = {
+        api_url:,
+        credentials: {
+          method: :api_token
+        }
+      }
+
+      expect { OpenFga::SdkClient.new(config) }.to raise_error(
+        ConfigurationError,
+        /credentials\[:api_token\] is required when using credentials\[:method\] = :api_token/)
+
+    end
   end
 
   it 'can create a client with basic options' do
     expect(OpenFga::SdkClient.new(api_url:)).not_to be_nil
+  end
+
+  it 'can create a client with :none credential method' do
+    config = {
+      api_url:,
+      credentials: {
+        method: :none
+      }
+    }
+
+    expect(OpenFga::SdkClient.new(config)).not_to be_nil
+  end
+
+  it 'can create a client with an API token' do
+    config = {
+      api_url:,
+      credentials: {
+        method: :api_token,
+        api_token: 'token'
+      }
+    }
+
+    expect(OpenFga::SdkClient.new(config)).not_to be_nil
+  end
+
+  describe 'Setting API key' do
+    let(:valid_body) { load_json('write_authorization_model_body') }
+    let(:config) {
+      {
+        api_url:,
+        store_id:,
+        credentials: {
+          method: :api_token,
+          api_token: 'token'
+        }
+      }
+    }
+
+    let(:subject) { OpenFga::SdkClient.new(config) }
+
+    it 'can call an API endpoint and pass the Authorization header' do
+      stub = stub_request_with_response(method: :post,
+                path: "#{stores_url(store_id)}/authorization-models",
+                status: 201,
+                request_body: valid_body,
+                headers: {
+                  'Authorization' => 'Bearer token'
+                },
+                response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
+
+      response = subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                   schema_version: valid_body['schema_version'],
+                                                   conditions: valid_body['conditions'])
+
+      expect(stub).to have_been_requested
+      expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
+      expect(response.authorization_model_id).not_to be_nil
+    end
   end
 
   describe 'Authorization Models' do
