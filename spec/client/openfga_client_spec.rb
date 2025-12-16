@@ -4,8 +4,9 @@ describe OpenFga::SdkClient do
   let(:api_url) { 'http://localhost:8090' }
   let(:store_id) { '01JSKYVY76JYW2DG65NG1444T4' }
   let(:authorization_model_id) { '01G50QVV17PECNVAHX1GG4Y5NC' }
-  let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
+  let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:, authorization_model_id:) }
   let(:subject_no_store) { OpenFga::SdkClient.new(api_url:) }
+  let(:subject_no_model_id) { OpenFga::SdkClient.new(api_url:, store_id:) }
 
   def store_path(store_id)
     "/stores/#{store_id}"
@@ -178,22 +179,6 @@ describe OpenFga::SdkClient do
                                                             schema_version: valid_body['schema_version'],
                                                             conditions: valid_body['conditions']) }.to raise_error(MissingStoreIdError)
       end
-
-      it 'raises an error if type_definition is missing' do
-        stub_request_with_response(method: :post,
-                                   path: "#{stores_url(store_id)}/authorization-models",
-                                   status: 400)
-        expect { subject.write_authorization_model(type_definitions: nil,
-                                                   schema_version: valid_body['schema_version']) }.to raise_error(ArgumentError)
-      end
-
-      it 'raises an error if schema_version is missing' do
-        stub_request_with_response(method: :post,
-                                   path: "#{stores_url(store_id)}/authorization-models",
-                                   status: 400)
-        expect { subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
-                                                   schema_version: nil) }.to raise_error(ArgumentError)
-      end
     end
 
     context 'when reading an authorization model' do
@@ -212,17 +197,17 @@ describe OpenFga::SdkClient do
                                    status: 200,
                                    response_body: valid_response)
 
-        result = subject.read_authorization_model(id: model_id)
+        result = subject.read_authorization_model(authorization_model_id: model_id)
         expect(result).to be_a(OpenFga::ReadAuthorizationModelResponse)
         expect(result.authorization_model.id).to eq(model_id)
       end
 
       it 'raises an error if store_id is missing' do
-        expect { subject_no_store.read_authorization_model(id: model_id) }.to raise_error(MissingStoreIdError)
+        expect { subject_no_store.read_authorization_model(authorization_model_id: model_id) }.to raise_error(MissingStoreIdError)
       end
 
       it 'raises an error if model_id is missing' do
-        expect { subject.read_authorization_model(id: nil) }.to raise_error(ArgumentError)
+        expect { subject_no_model_id.read_authorization_model }.to raise_error(MissingAuthorizationModelIdError)
       end
 
       it 'raises an error if the authorization model does not exist' do
@@ -233,7 +218,7 @@ describe OpenFga::SdkClient do
                                      code: 'undefined_endpoint',
                                      message: 'Endpoint not enabled'
                                    })
-        expect { subject.read_authorization_model(id: model_id) }.to raise_error(OpenFga::ApiError)
+        expect { subject.read_authorization_model({ authorization_model_id: model_id }) }.to raise_error(OpenFga::ApiError)
       end
     end
 
@@ -312,7 +297,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'raises an error if model_id is missing' do
-          expect { subject.read_assertions(store_id:, authorization_model_id: nil) }.to raise_error(MissingAuthorizationModelIdError)
+          expect { subject_no_model_id.read_assertions(store_id:, authorization_model_id: nil) }.to raise_error(MissingAuthorizationModelIdError)
         end
 
         it 'raises an error if the assertions do not exist' do
@@ -334,7 +319,7 @@ describe OpenFga::SdkClient do
                                      status: 204,
                                      request_body: { assertions: })
 
-          expect { subject.write_assertions(assertions:, opts: { store_id:, authorization_model_id: }) }.not_to raise_error
+          expect { subject.write_assertions(assertions:, store_id:, authorization_model_id:) }.not_to raise_error
         end
 
         it 'raises an error if store_id is missing' do
@@ -342,7 +327,7 @@ describe OpenFga::SdkClient do
         end
 
         it 'raises an error if model_id is missing' do
-          expect { subject.write_assertions(assertions:, opts: { store_id:,  authorization_model_id: nil }) }.to raise_error(MissingAuthorizationModelIdError)
+          expect { subject_no_model_id.write_assertions(assertions:, store_id:, authorization_model_id: nil) }.to raise_error(MissingAuthorizationModelIdError)
         end
 
         it 'raises an error for invalid assertions' do
@@ -355,7 +340,7 @@ describe OpenFga::SdkClient do
                                        message: 'Invalid assertions'
                                      })
 
-          expect { subject.write_assertions(assertions: [], opts: { store_id:, authorization_model_id: }) }.to raise_error(ArgumentError)
+          expect { subject.write_assertions(assertions: [], store_id:, authorization_model_id:) }.to raise_error(OpenFga::ApiError)
         end
       end
     end
@@ -536,7 +521,7 @@ describe OpenFga::SdkClient do
             response_body: second_batch_response
           )
 
-          result = subject.batch_check(checks: large_check_set)
+          result = subject.batch_check({ checks: large_check_set })
 
           expect(result).to be_a(OpenFga::BatchCheckResponse)
           expect(result.result.size).to eq(75)
@@ -566,10 +551,7 @@ describe OpenFga::SdkClient do
             )
           end
 
-          result = subject.batch_check(
-            checks: large_check_set,
-            opts: { max_batch_size: 25 }
-          )
+          result = subject.batch_check(checks: large_check_set, opts: { max_batch_size: 25 })
 
           expect(result).to be_a(OpenFga::BatchCheckResponse)
           expect(result.result.size).to eq(75)
@@ -609,7 +591,7 @@ describe OpenFga::SdkClient do
             response_body: single_batch_response
           )
 
-          result = subject.batch_check(checks: small_check_set)
+          result = subject.batch_check({ checks: small_check_set })
 
           expect(result).to be_a(OpenFga::BatchCheckResponse)
           expect(result.result.size).to eq(10)
@@ -655,10 +637,8 @@ describe OpenFga::SdkClient do
             )
           end
 
-          result = subject.batch_check(
-            checks: concurrent_check_set,
-            opts: { max_batch_size: 5, max_parallel_requests: 2 }
-          )
+          result = subject.batch_check(checks: concurrent_check_set,
+                                       opts: { max_batch_size: 5, max_parallel_requests: 2 })
 
           expect(result).to be_a(OpenFga::BatchCheckResponse)
           expect(result.result.size).to eq(20)
@@ -705,10 +685,8 @@ describe OpenFga::SdkClient do
             )
           end
 
-          result = subject.batch_check(
-            checks: sequential_check_set,
-            opts: { max_batch_size: 5, max_parallel_requests: 1 }
-          )
+          result = subject.batch_check(checks: sequential_check_set,
+                                       opts: { max_batch_size: 5, max_parallel_requests: 1 })
 
           expect(result).to be_a(OpenFga::BatchCheckResponse)
           expect(result.result.size).to eq(15)
@@ -753,10 +731,8 @@ describe OpenFga::SdkClient do
             )
           end
 
-          result = subject.batch_check(
-            checks: large_dataset,
-            opts: { max_batch_size: 20, max_parallel_requests: 3 }
-          )
+          result = subject.batch_check(checks: large_dataset,
+                                       opts: { max_batch_size: 20, max_parallel_requests: 3 })
 
           expect(result).to be_a(OpenFga::BatchCheckResponse)
           expect(result.result.size).to eq(100)
@@ -817,8 +793,7 @@ describe OpenFga::SdkClient do
             .to_return(status: 500, body: '{"error": "Internal server error"}')
 
           # Should not raise error, but should include results from successful batch
-          result = subject.batch_check(
-            checks: error_prone_checks,
+          result = subject.batch_check(checks: error_prone_checks,
             opts: { max_batch_size: 5 }
           )
 
@@ -865,11 +840,12 @@ describe OpenFga::SdkClient do
                                                        relation: 'reader',
                                                        object: 'document:2021-budget'
                                                      },
-                                                   consistency: 'UNSPECIFIED'
+                                                   authorization_model_id:,
+                                                   consistency: 'UNSPECIFIED',
                                    },
                                    response_body: { allowed: true, resolution: 'string' })
 
-        response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+        response = subject.check({ user: 'user:anne', relation: :reader, object: 'document:2021-budget' })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -884,29 +860,18 @@ describe OpenFga::SdkClient do
                                                        relation: 'reader',
                                                        object: 'document:2021-budget'
                                                      },
+                                                   authorization_model_id:,
                                                    consistency: 'UNSPECIFIED'
                                    },
                                    response_body: { allowed: false, resolution: 'string' })
 
-        response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+        response = subject.check({ user: 'user:anne', relation: :reader, object: 'document:2021-budget' })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be false
       end
 
       it 'should raise an error if store_id is missing' do
-        expect { subject_no_store.check(user: 'user:anne', relation: :reader, object: 'roadmap') }.to raise_error(MissingStoreIdError)
-      end
-
-      it 'should raise an error if user is missing' do
-        expect { subject.check(user: nil, relation: :reader, object: 'roadmap') }.to raise_error(ArgumentError)
-      end
-
-      it 'should raise an error if relation is missing' do
-        expect { subject.check(user: 'user:anne', relation: nil, object: 'roadmap') }.to raise_error(ArgumentError)
-      end
-
-      it 'should raise an error if object is missing' do
-        expect { subject.check(user: 'user:anne', relation: :reader, object: nil) }.to raise_error(ArgumentError)
+        expect { subject_no_store.check(user: 'user:anne', relation: :reader, object: 'roadmap', opts: { authorization_model_id: }) }.to raise_error(MissingStoreIdError)
       end
 
       it 'should work with contextual tuples' do
@@ -920,12 +885,13 @@ describe OpenFga::SdkClient do
                                                        object: 'document:2021-budget'
                                                      },
                                                    contextual_tuples:,
+                                                   authorization_model_id:,
                                                    consistency: 'UNSPECIFIED'
                                    },
                                    response_body: { allowed: true, resolution: 'string' })
 
         response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
-                                 contextual_tuples:)
+                                   contextual_tuples:)
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -961,13 +927,14 @@ describe OpenFga::SdkClient do
                                        relation: 'reader',
                                        object: 'document:2021-budget'
                                      },
+                                     authorization_model_id:,
                                      context: {},
                                      consistency: 'UNSPECIFIED'
                                    },
                                    response_body: { allowed: true, resolution: 'string' })
 
         response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
-                                 context: {})
+                                 opts: { context: {} })
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -1021,7 +988,7 @@ describe OpenFga::SdkClient do
       end
 
       it 'raises an error if store_id is missing' do
-        expect { subject_no_store.expand(relation:, object:) }.to raise_error(MissingStoreIdError)
+        expect { subject_no_store.expand(relation:, object:, opts: { authorization_model_id: }) }.to raise_error(MissingStoreIdError)
       end
 
       it 'raises an error if relation is missing' do
@@ -1047,8 +1014,8 @@ describe OpenFga::SdkClient do
                                    },
                                    response_body: load_json('expand_with_contextual_tuples_response'))
 
-        response = subject.expand(relation: :writer, object: 'document:1',
-                                  opts: { contextual_tuples:, authorization_model_id: })
+        response = subject.expand(relation: :writer, object: 'document:1', contextual_tuples:,
+                                  opts: { authorization_model_id: })
 
         expect(stub).to have_been_requested
         expect(response).to be_a(OpenFga::ExpandResponse)
@@ -1153,7 +1120,7 @@ describe OpenFga::SdkClient do
                                           })
 
         response = subject.list_objects(user:, relation:, type:, contextual_tuples:,
-                                  opts: { authorization_model_id:,
+                                        opts: { authorization_model_id:,
                                           consistency: 'MINIMIZE_LATENCY'
                                   })
 
@@ -1181,7 +1148,7 @@ describe OpenFga::SdkClient do
                                           })
 
         response = subject.list_objects(user:, relation:, type:, contextual_tuples:,
-                                        context: { view_count: 100 },
+                                          context: { view_count: 100 },
                                         opts: { authorization_model_id:,
                                                 consistency: 'MINIMIZE_LATENCY'
                                         })
@@ -1382,19 +1349,12 @@ describe OpenFga::SdkClient do
         it 'should send the correct request' do
           stub_request_with_response(
             method: :get,
-            path: "#{stores_url(store_id)}/changes?page_size=#{page_size}&type=#{type}&start_time=#{start_time}&continuation_token=#{continuation_token}",
+            path: "#{stores_url(store_id)}/changes?type=#{type}&start_time=#{start_time}&continuation_token=#{continuation_token}&page_size=#{page_size}",
             status: 200,
             response_body:)
 
-          opts = {
-            continuation_token:,
-            store_id:,
-            page_size:
-          }
-
           # call will fail if the request if `path` above is not generated correctly
-          # based on `body` and `opts`.
-          expect { subject.read_changes(type:, start_time:, opts:) }.not_to raise_error
+          expect { subject.read_changes(type:, start_time:, continuation_token:, store_id:, page_size:) }.not_to raise_error
         end
       end
     end
@@ -1669,21 +1629,20 @@ describe OpenFga::SdkClient do
             response_body: {},
           )
 
-          subject.write(
-            writes: {
+          subject.write(writes: {
               tuple_keys: [{
-                user: 'user:2',
-                relation: 'member',
-                object: 'group:2'
-              }]
+                             user: 'user:2',
+                             relation: 'member',
+                             object: 'group:2'
+                           }]
             },
-            deletes: {
-              tuple_keys: [{
-                user: 'user:1',
-                relation: 'member',
-                object: 'group:1'
-              }]
-            }, opts:)
+              deletes: {
+                tuple_keys: [{
+                               user: 'user:1',
+                               relation: 'member',
+                               object: 'group:1'
+                             }]
+              }, opts:)
 
           expect(stub).to have_been_requested
         end
@@ -1718,8 +1677,8 @@ describe OpenFga::SdkClient do
 
         subject.list_users(
           relation: :member,
-          object: 'group:1',
-          user_filters: [{ type: 'user' }],
+            object: 'group:1',
+            user_filters: [{ type: 'user' }],
           opts:
         )
 
@@ -1765,22 +1724,22 @@ describe OpenFga::SdkClient do
 
         subject.list_users(
           relation: :member,
-          object: 'group:1',
-          user_filters: [{
-                           type: 'user'
-                         }],
-          contextual_tuples: [{
-                                user: 'user:john',
-                                relation: 'member',
-                                object: 'group:2',
-                                condition: {
-                                  name: 'condition_1',
-                                  context: {}
-                                }
-                              }],
-          context: {
-            my_key: 'value_1'
-          },
+            object: 'group:1',
+            user_filters: [{
+                             type: 'user'
+                           }],
+            contextual_tuples: [{
+                                  user: 'user:john',
+                                  relation: 'member',
+                                  object: 'group:2',
+                                  condition: {
+                                    name: 'condition_1',
+                                    context: {}
+                                  }
+                                }],
+            context: {
+              my_key: 'value_1'
+            },
           opts:
         )
 
@@ -1796,7 +1755,7 @@ describe OpenFga::SdkClient do
       end
 
       it 'should raise an error if store_id is missing' do
-        expect { subject_no_store.list_users(relation: :member, object: 'group:1', user_filters: [{ type: 'user' }]) }.to raise_error(MissingStoreIdError)
+        expect { subject_no_store.list_users(relation: :member, object: 'group:1', user_filters: [{ type: 'user' }], opts: { authorization_model_id: }) }.to raise_error(MissingStoreIdError)
       end
     end
   end

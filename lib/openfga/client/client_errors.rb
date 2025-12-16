@@ -23,6 +23,6 @@ end
 
 class MissingAuthorizationModelIdError < ConfigurationNilError
   def initialize
-    super :store_id
+    super :authorization_model_id
   end
 end

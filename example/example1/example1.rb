@@ -483,7 +483,7 @@ class OpenFgaExample
     def read_authorization_model_example
       @logger.info '=== Reading Authorization Model ==='
 
-      response = @client.read_authorization_model(id: @authorization_model_id)
+      response = @client.read_authorization_model(authorization_model_id: @authorization_model_id)
       @logger.info "Authorization model ID: #{response.authorization_model.id}"
       @logger.info "Schema version: #{response.authorization_model.schema_version}"
       @logger.info "Type definitions count: #{response.authorization_model.type_definitions.length}"
@@ -645,8 +645,8 @@ class OpenFgaExample
       # Check if Dave can read repo:python-sdk (should be true - he's in backend team + org repo_writer permission)
       response = @client.check(
         user: 'user:dave',
-        relation: 'reader',
-        object: 'repo:python-sdk',
+          relation: 'reader',
+          object: 'repo:python-sdk',
         opts: { authorization_model_id: @authorization_model_id }
       )
       @logger.info "Can Dave read repo:python-sdk? #{response.allowed}"
@@ -770,8 +770,7 @@ class OpenFgaExample
         }
       ]
 
-      @client.write_assertions(assertions:,
-                               opts: { authorization_model_id: @authorization_model_id })
+      @client.write_assertions(assertions:, opts: { authorization_model_id: @authorization_model_id })
 
       @logger.info "Successfully wrote #{assertions.length} assertions"
     end
