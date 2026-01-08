@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-#
 require 'concurrent'
 require 'set'
 
 module OpenFga
   class SdkClient
     PAGE_SIZE = 50
-    CREDENTIALS_METHODS = %i[none api_token].freeze
+    CREDENTIALS_METHODS = %i[none api_token client_credentials].freeze
 
     def initialize(config = {})
       raise ConfigurationNilError.new(:api_url) unless config[:api_url]
@@ -18,23 +17,35 @@ module OpenFga
         method: :none
       }
 
-      credentials = @config[:credentials]
-      validate_credentials_config(credentials)
+      # Later we can support custom token managers.
+      @token_manager = case @config[:credentials][:method]
+                       when :none
+                         TokenManager::NoopTokenManager.new
+                       when :api_token
+                         TokenManager::StaticTokenManager.new(@config.dig(:credentials, :api_token))
+                       when :client_credentials
+                         oauth_config = TokenManager::Oauth2TokenManager::Config.new(
+                           client_id: @config.dig(:credentials, :client_id),
+                           client_secret: @config.dig(:credentials, :client_secret),
+                           token_issuer: @config.dig(:credentials, :api_token_issuer),
+                           audience: @config.dig(:credentials, :api_audience)
+                         )
+
+                         TokenManager::Oauth2TokenManager.new(oauth_config)
+                       else
+                         valid_methods = CREDENTIALS_METHODS.join(', ')
+
+                         raise ConfigurationError, "Unknown credentials method: #{@config[:credentials]}" \
+                           "Supported methods: #{valid_methods}"
+      end
 
       api_client_config = Configuration.new do |c|
         c.server_index = nil
         c.host = @config[:api_url]
+        c.scheme = URI(@config[:api_url]).scheme
       end
 
-      api_client = ApiClient.new(api_client_config)
-
-      if credentials[:api_token]
-        api_client.default_headers = api_client.default_headers.merge(
-          'Authorization' => "Bearer #{credentials[:api_token]}"
-        )
-      end
-
-      @api_client = OpenFga::OpenFgaApi.new(api_client)
+      @api_client = OpenFga::OpenFgaApi.new(ApiClient.new(api_client_config))
     end
 
     # Performs multiple relationship checks in a single batch request.
@@ -67,6 +78,7 @@ module OpenFga
 
       # Validate all checks first and check for duplicates
       correlation_ids = Set.new
+
       checks.each_with_index do |check, index|
         fail ArgumentError, "Missing 'tuple_key' in check item at index #{index}" if check[:tuple_key].nil?
         fail ArgumentError, "Missing 'correlation_id' in check item at index #{index}" if check[:correlation_id].nil?
@@ -121,7 +133,7 @@ module OpenFga
     def check(body = {})
       opts = body[:opts] || {}
       tuple_key = CheckRequestTupleKey.new({
-        user: body[:user], relation: body[:relation].to_s, object: body[:object] })
+                                             user: body[:user], relation: body[:relation].to_s, object: body[:object] })
 
       request_body = CheckRequest.new({ tuple_key: })
 
@@ -131,10 +143,9 @@ module OpenFga
       end
 
       request_body.context = opts[:context] unless opts[:context].nil?
-
       request_body.authorization_model_id = authorization_model_id(opts)
 
-      @api_client.check(store_id(opts), request_body, opts)
+      @api_client.check(store_id(opts), request_body, wrap_options(opts))
     end
 
     ## Creates a new OpenFGA store for storing authorization models and relationship tuples.
@@ -146,7 +157,7 @@ module OpenFga
       request_body = OpenFga::CreateStoreRequest.new(body)
       opts = body[:opts] || {}
 
-      @api_client.create_store(request_body, opts)
+      @api_client.create_store(request_body, wrap_options(opts))
     end
 
     # Delete a store
@@ -155,7 +166,7 @@ module OpenFga
     # @option opts [String] :store_id The ID of the store to delete (required if not set in client config)
     # @return [nil]
     def delete_store(opts = {})
-      @api_client.delete_store(store_id(opts), opts)
+      @api_client.delete_store(store_id(opts), wrap_options(opts))
     end
 
     # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the given object.
@@ -190,7 +201,7 @@ module OpenFga
       end
 
       # Call the API client to perform the expansion
-      @api_client.expand(store_id(opts), request_body, opts)
+      @api_client.expand(store_id(opts), request_body, wrap_options(opts))
     end
 
     # Get a store
@@ -199,7 +210,16 @@ module OpenFga
     # @option opts [String] :store_id The ID of the store to retrieve (required if not set in client config)
     # @return [GetStoreResponse] The response containing the store details
     def get_store(opts = {})
-      @api_client.get_store(store_id(opts), opts)
+      @api_client.get_store(store_id(opts), wrap_options(opts))
+    end
+
+    # Get a store
+    # Returns an OpenFGA store by its identifier
+    # @param opts [Hash] Optional parameters for the request
+    # @option opts [String] :store_id The ID of the store to retrieve (required if not set in client config)
+    # @return [GetStoreResponse] The response containing the store details
+    def get_store(opts = {})
+      @api_client.get_store(store_id(opts), wrap_options(opts))
     end
 
     # List objects for a given user and relation.
@@ -244,7 +264,7 @@ module OpenFga
       request_body.context = context unless context.nil?
 
       # Call the API client to perform the list objects request
-      @api_client.list_objects(store_id(opts), request_body, opts)
+      @api_client.list_objects(store_id(opts), request_body, wrap_options(opts))
     end
 
     # List all stores
@@ -254,7 +274,7 @@ module OpenFga
     # @option opts [String] :continuation_token The continuation token for pagination
     # @return [ListStoresResponse] The response containing the paginated list of stores
     def list_stores(opts = {})
-      @api_client.list_stores(opts)
+      @api_client.list_stores(wrap_options(opts))
     end
 
     # List users that have a specific relation with an object
@@ -297,7 +317,7 @@ module OpenFga
         request_body.contextual_tuples = tuples
       end
 
-      @api_client.list_users(store_id(opts), request_body, opts)
+      @api_client.list_users(store_id(opts), request_body, wrap_options(opts))
     end
 
     # Read tuples from the store
@@ -306,7 +326,6 @@ module OpenFga
     # @option body [String] :user The user to read tuples for
     # @option body [String, Symbol] :relation The relation to read tuples for
     # @option body [String] :object The object to read tuples for
-    # @param opts [Hash] Optional parameters for the request
     # @option opts [Integer] :page_size The number of tuples to return per page
     # @option opts [String] :continuation_token The continuation token for pagination
     # @option opts [String] :consistency The consistency level for the read operation
@@ -331,7 +350,7 @@ module OpenFga
         request_body.tuple_key = ReadRequestTupleKey.new(tuple_key)
       end
 
-      @api_client.read(store_id(opts), request_body, opts)
+      @api_client.read(store_id(opts), request_body, wrap_options(opts))
     end
 
     # Read assertions
@@ -344,7 +363,7 @@ module OpenFga
     # @return [ReadAssertionsResponse] The response containing the assertions
     def read_assertions(opts = {})
       fail MissingAuthorizationModelIdError unless authorization_model_id(opts)
-      @api_client.read_assertions(store_id(opts), authorization_model_id(opts), opts)
+      @api_client.read_assertions(store_id(opts), authorization_model_id(opts), wrap_options(opts))
     end
 
     # Read an authorization model
@@ -357,7 +376,7 @@ module OpenFga
     # @return [ReadAuthorizationModelResponse] The response containing the authorization model details
     def read_authorization_model(opts = {})
       fail MissingAuthorizationModelIdError unless authorization_model_id(opts)
-      @api_client.read_authorization_model(store_id(opts), authorization_model_id(opts), opts)
+      @api_client.read_authorization_model(store_id(opts), authorization_model_id(opts), wrap_options(opts))
     end
 
     # Read all authorization models
@@ -367,21 +386,20 @@ module OpenFga
     # @raise [MissingStoreIdError] If the store_id is not provided
     # @return [ReadAuthorizationModelsResponse] The response containing the list of authorization models
     def read_authorization_models(opts = {})
-      @api_client.read_authorization_models(store_id(opts), opts)
+      @api_client.read_authorization_models(store_id(opts), wrap_options(opts))
     end
 
     # Read changes
     # Reads the list of historical relationship tuple writes and deletes.
     # @param body [Hash] The request body containing change query details
     # @option body [String] :type Get the list of tuple changes that affect only this type
-    # @option body [String] :start_time The start time of the range to read changes from. This is a timestamp in ISO 8601 format
-    # @param opts [Hash] Optional parameters for the request
+    # @option body [String] :start_time The start time of the range to read changes from. This is a timestamp in ISO 8601 format    # @param opts [Hash] Optional parameters for the request
     # @option opts [Integer] :page_size The number of pages to return in the request
     # @option opts [String] :continuation_token The continuation token to use to get the next page of results. This will be empty if there are no more results
     # @option opts [String] :store_id The store ID to read changes from (required if not set in client config)
     # @return [ReadChangesResponse] The response containing the list of changes
     def read_changes(opts = {})
-      @api_client.read_changes(store_id(opts), opts)
+      @api_client.read_changes(store_id(opts), wrap_options(opts))
     end
 
     # Write tuples to the store.
@@ -398,7 +416,7 @@ module OpenFga
       request_body = WriteRequest.new(writes: body[:writes], deletes: body[:deletes])
 
       request_body.authorization_model_id = opts[:authorization_model_id] if opts[:authorization_model_id]
-      @api_client.write(store_id(opts), request_body, opts)
+      @api_client.write(store_id(opts), request_body, wrap_options(opts))
     end
 
     # Writes assertions for a specific store and authorization model.
@@ -419,7 +437,7 @@ module OpenFga
 
       request_body = WriteAssertionsRequest.new(assertions: body[:assertions])
 
-      @api_client.write_assertions(store_id, model_id, request_body, opts)
+      @api_client.write_assertions(store_id, model_id, request_body, wrap_options(opts))
     end
 
     # Writes an authorization model for a specific store.
@@ -439,117 +457,124 @@ module OpenFga
         conditions: body[:conditions]
       )
 
-      @api_client.write_authorization_model(store_id(opts), request_body, opts)
+      @api_client.write_authorization_model(store_id(opts), request_body, wrap_options(opts))
     end
 
-private
+    private
 
-  def validate_credentials_config(credentials_config)
-    fail ArgumentError, "Missing the required parameter 'credentials_config' if credentials_config.nil?" if credentials_config.nil?
+      # Executes a single batch check (used when no splitting is needed)
+      def execute_single_batch_check(checks, opts)
+        check_items = build_check_items(checks)
+        request_body = build_batch_request(check_items, opts)
+        @api_client.batch_check(store_id(opts), request_body, wrap_options(opts))
+      end
 
-    unless CREDENTIALS_METHODS.include?(credentials_config[:method])
-      fail ConfigurationError, "Only the '#{CREDENTIALS_METHODS.join(', ')}' credentials methods are supported, but '#{credentials_config[:method]}' was found"
-    end
+      # Processes multiple batches concurrently using concurrent-ruby thread pool and futures
+      def process_batches_concurrently(batches, max_concurrent, opts)
+        # Use concurrent-ruby's thread pool for better performance and resource management
+        pool = Concurrent::FixedThreadPool.new(max_concurrent)
 
-    if credentials_config[:method] == :api_token && credentials_config[:api_token].nil?
-      fail ConfigurationError, 'credentials[:api_token] is required when using credentials[:method] = :api_token'
-    end
-  end
+        begin
+          # Create futures for each batch
+          futures = batches.map do |batch|
+            Concurrent::Future.execute(executor: pool) do
+              execute_single_batch_check(batch, opts)
+            rescue => e
+              # Log error but don't fail entire operation
+              warn "Batch check failed: #{e.message}"
+              # Return empty result for this batch
+              BatchCheckResponse.new(result: {})
+            end
+          end
 
-  # Executes a single batch check (used when no splitting is needed)
-  def execute_single_batch_check(checks, opts)
-    check_items = build_check_items(checks)
-    request_body = build_batch_request(check_items, opts)
-    @api_client.batch_check(store_id(opts), request_body, opts)
-  end
-
-  # Processes multiple batches concurrently using concurrent-ruby thread pool and futures
-  def process_batches_concurrently(batches, max_concurrent, opts)
-    # Use concurrent-ruby's thread pool for better performance and resource management
-    pool = Concurrent::FixedThreadPool.new(max_concurrent)
-
-    begin
-      # Create futures for each batch
-      futures = batches.map do |batch|
-        Concurrent::Future.execute(executor: pool) do
-          execute_single_batch_check(batch, opts)
-        rescue => e
-          # Log error but don't fail entire operation
-          warn "Batch check failed: #{e.message}"
-          # Return empty result for this batch
-          BatchCheckResponse.new(result: {})
+          # Wait for all futures to complete and collect results
+          futures.map(&:value!)
+        ensure
+          # Shutdown the thread pool
+          pool.shutdown
+          pool.wait_for_termination
         end
       end
 
-      # Wait for all futures to complete and collect results
-      futures.map(&:value!)
-    ensure
-      # Shutdown the thread pool
-      pool.shutdown
-      pool.wait_for_termination
-    end
-  end
+      # Builds check items from the check array
+      def build_check_items(checks)
+        checks.map do |check|
+          tuple_key = CheckRequestTupleKey.new({
+                                                 user: check[:tuple_key][:user],
+                                                 relation: check[:tuple_key][:relation].to_s,
+                                                 object: check[:tuple_key][:object]
+                                               })
 
-  # Builds check items from the check array
-  def build_check_items(checks)
-    checks.map do |check|
-      tuple_key = CheckRequestTupleKey.new({
-        user: check[:tuple_key][:user],
-        relation: check[:tuple_key][:relation].to_s,
-        object: check[:tuple_key][:object]
-      })
+          batch_check_item = BatchCheckItem.new({
+                                                  tuple_key:,
+                                                  correlation_id: check[:correlation_id].to_s
+                                                })
 
-      batch_check_item = BatchCheckItem.new({
-        tuple_key:,
-        correlation_id: check[:correlation_id].to_s
-      })
+          # Add contextual tuples if provided
+          if check.include?(:contextual_tuples)
+            contextual_tuples = check[:contextual_tuples]
+            tuple_keys = contextual_tuples[:tuple_keys].map { |tk| TupleKey.new(tk) }
+            batch_check_item.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
+          end
 
-      # Add contextual tuples if provided
-      if check.include?(:contextual_tuples)
-        contextual_tuples = check[:contextual_tuples]
-        tuple_keys = contextual_tuples[:tuple_keys].map { |tk| TupleKey.new(tk) }
-        batch_check_item.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
+          # Add context if provided
+          if check.include?(:context)
+            batch_check_item.context = check[:context]
+          end
+
+          batch_check_item
+        end
       end
 
-      # Add context if provided
-      if check.include?(:context)
-        batch_check_item.context = check[:context]
+      # Builds the batch check request with options
+      def build_batch_request(check_items, opts)
+        request_body = BatchCheckRequest.new({ checks: check_items })
+
+        if opts.include?(:authorization_model_id)
+          request_body.authorization_model_id = opts[:authorization_model_id]
+        end
+
+        if opts.include?(:consistency)
+          request_body.consistency = opts[:consistency]
+        end
+
+        request_body
       end
 
-      batch_check_item
-    end
-  end
+      # Returns the store ID from the options or configuration.
+      # Raises MissingStoreIdError if the store ID is not provided.
+      # @param opts [Hash, nil] Optional parameters that may include :store_id.
+      # @return [String] The store ID.
+      def store_id(opts = nil)
+        id = (opts || {})[:store_id] || @config[:store_id]
+        fail MissingStoreIdError unless id
+        id
+      end
 
-  # Builds the batch check request with options
-  def build_batch_request(check_items, opts)
-    request_body = BatchCheckRequest.new({ checks: check_items })
+      # Returns the authorization model ID from the options or configuration.
+      # @param opts [Hash, nil] Optional parameters that may include :authorization_model_id.
+      # @return [String] The authorization model ID.
+      def authorization_model_id(opts = nil)
+        (opts || {})[:authorization_model_id] || @config[:authorization_model_id]
+      end
 
-    if opts.include?(:authorization_model_id)
-      request_body.authorization_model_id = opts[:authorization_model_id]
-    end
+      # Returns the options that are augmented with other options that are consistant across
+      # all methods and API calls, such as authorization headers.
+      # @param opts [Hash, nil] The options
+      # @return [Hash] The same options merged with any additional consistant options for all API calls.
+      def wrap_options(opts)
+        # include authz headers
+        (opts || {}).merge(header_params: build_auth_headers)
+      end
 
-    if opts.include?(:consistency)
-      request_body.consistency = opts[:consistency]
-    end
+      def build_auth_headers
+        token = @token_manager.access_token
 
-    request_body
-  end
+        return {} unless token
 
-  # Returns the store ID from the options or configuration.
-  # Raises MissingStoreIdError if the store ID is not provided.
-  # @param opts [Hash, nil] Optional parameters that may include :store_id.
-  # @return [String] The store ID.
-  def store_id(opts = nil)
-    id = (opts || {})[:store_id] || @config[:store_id]
-    fail MissingStoreIdError unless id
-    id
-  end
-
-  # Returns the authorization model ID from the options or configuration.
-  # @param opts [Hash, nil] Optional parameters that may include :authorization_model_id.
-  # @return [String] The authorization model ID.
-  def authorization_model_id(opts = nil)
-    (opts || {})[:authorization_model_id] || @config[:authorization_model_id]
-  end
+        {
+          'Authorization' => "Bearer #{token}"
+        }
+      end
   end
 end

@@ -41,3 +41,5 @@ build/
 
 Gemfile.lock
 .ruby-version
+.env
+.env.local

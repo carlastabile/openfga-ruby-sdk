@@ -21,4 +21,4 @@ stop-openfga:
 .PHONY: run-%
 run-%: ## run example (e.g., make run-example1)
 	@echo "Running example $*..."
-	@ruby example/$*/$*.rb
+	@ruby example/$*/main.rb

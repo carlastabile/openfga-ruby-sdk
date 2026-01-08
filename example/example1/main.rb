@@ -6,10 +6,13 @@ require 'bundler/inline'
 gemfile do
   source 'https://rubygems.org'
   gem 'json'
-  gem 'openfga', '~> 0.0.1', path: File.expand_path('../../../', __dir__)
+  gem 'openfga', path: File.expand_path('../../', __dir__)
   gem 'logger'
   gem 'ulid'
+  gem 'dotenv'
 end
+
+require 'ulid'
 
 # OpenFGA Ruby SDK Example
 # This example demonstrates how to use the OpenFGA Ruby SDK to interact with an OpenFGA server.
@@ -21,7 +24,7 @@ class OpenFgaExample
     # Initialize the OpenFGA client
     # Replace with your OpenFGA server URL
     @client = OpenFga::SdkClient.new(
-      api_url: ENV.fetch('OPENFGA_API_URL', 'http://localhost:8080'),
+      api_url: ENV.fetch('FGA_LOCAL_API_URL', 'http://localhost:8080'),
       store_id: nil # Will be set after creating a store
     )
 
@@ -100,7 +103,7 @@ class OpenFgaExample
 
       # Update client with store_id
       @client = OpenFga::SdkClient.new(
-        api_url: ENV.fetch('OPENFGA_API_URL', 'http://localhost:8080'),
+        api_url: ENV.fetch('FGA_API_URL', 'http://localhost:8080'),
         store_id: @store_id
       )
     end

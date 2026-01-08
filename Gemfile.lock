@@ -85,6 +85,7 @@ GEM
       rubocop (~> 1.72, >= 1.72.1)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
+    timecop (0.9.10)
     unicode-display_width (3.1.4)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
@@ -105,6 +106,7 @@ DEPENDENCIES
   rspec (~> 3.6, >= 3.6.0)
   rubocop (~> 1.75.1)
   rubocop-rspec (~> 3.5.0)
+  timecop (~> 0.9.10)
   webmock (~> 3.25.2)
 
 BUNDLED WITH

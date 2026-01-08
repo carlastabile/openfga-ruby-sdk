@@ -9,4 +9,5 @@ group :development, :test do
   gem 'pry-byebug'
   gem 'rubocop', '~> 1.75.1'
   gem 'rubocop-rspec', '~> 3.5.0'
+  gem 'timecop', '~> 0.9.10'
 end

@@ -7,6 +7,33 @@ describe OpenFga::SdkClient do
   let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:, authorization_model_id:) }
   let(:subject_no_store) { OpenFga::SdkClient.new(api_url:) }
   let(:subject_no_model_id) { OpenFga::SdkClient.new(api_url:, store_id:) }
+  let(:subject_with_api_token) { OpenFga::SdkClient.new(config_api_token) }
+
+  let(:api_token_authz_header) {
+    { 'Authorization' => 'Bearer token' }
+  }
+
+  let(:config_no_credentials) {
+    {
+      api_url:,
+      store_id:,
+      credentials: {
+        method: :none
+      }
+    }
+  }
+
+  let(:config_api_token) {
+    {
+      api_url:,
+      store_id:,
+      authorization_model_id:,
+      credentials: {
+        method: :api_token,
+        api_token: 'token'
+      }
+    }
+  }
 
   def store_path(store_id)
     "/stores/#{store_id}"
@@ -17,41 +44,6 @@ describe OpenFga::SdkClient do
       "#{api_url}#{store_path(store_id)}" if store_id
     else
       "#{api_url}/stores"
-    end
-  end
-
-  describe 'Configuration errors' do
-    it 'checks for api_url' do
-      expect { OpenFga::SdkClient.new }.to raise_error(ConfigurationNilError) do |err|
-        expect(err.property).to be :api_url
-      end
-    end
-
-    it 'checks for valid credentials method' do
-      config = {
-        api_url:,
-        credentials: {
-          method: :random_method
-        }
-      }
-
-      expect { OpenFga::SdkClient.new(config) }.to raise_error(
-        ConfigurationError,
-        /Only the '.+?' credentials methods are supported/)
-    end
-
-    it 'checks for valid api token with credentials method: :api_token' do
-      config = {
-        api_url:,
-        credentials: {
-          method: :api_token
-        }
-      }
-
-      expect { OpenFga::SdkClient.new(config) }.to raise_error(
-        ConfigurationError,
-        /credentials\[:api_token\] is required when using credentials\[:method\] = :api_token/)
-
     end
   end
 
@@ -82,38 +74,141 @@ describe OpenFga::SdkClient do
     expect(OpenFga::SdkClient.new(config)).not_to be_nil
   end
 
-  describe 'Setting API key' do
-    let(:valid_body) { load_json('write_authorization_model_body') }
-    let(:config) {
-      {
-        api_url:,
-        store_id:,
-        credentials: {
-          method: :api_token,
-          api_token: 'token'
+  describe 'Credentials configuration' do
+    describe 'with mode == :api_token' do
+      let(:valid_body) { load_json('write_authorization_model_body') }
+
+      let(:config) {
+        {
+          api_url:,
+          store_id:,
+          credentials: {
+            method: :api_token,
+            api_token: 'token'
+          }
         }
       }
-    }
 
-    let(:subject) { OpenFga::SdkClient.new(config) }
+      let(:subject) { OpenFga::SdkClient.new(config) }
 
-    it 'can call an API endpoint and pass the Authorization header' do
-      stub = stub_request_with_response(method: :post,
-                path: "#{stores_url(store_id)}/authorization-models",
-                status: 201,
-                request_body: valid_body,
-                headers: {
-                  'Authorization' => 'Bearer token'
-                },
-                response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
+      it 'can call an API endpoint and pass the Authorization header' do
+        stub = stub_request_with_response(method: :post,
+                                          path: "#{stores_url(store_id)}/authorization-models",
+                                          status: 201,
+                                          request_body: valid_body,
+                                          headers: api_token_authz_header,
+                                          response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
 
-      response = subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
-                                                   schema_version: valid_body['schema_version'],
-                                                   conditions: valid_body['conditions'])
+        response = subject_with_api_token.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                                    schema_version: valid_body['schema_version'],
+                                                                    conditions: valid_body['conditions'])
 
-      expect(stub).to have_been_requested
-      expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
-      expect(response.authorization_model_id).not_to be_nil
+        expect(stub).to have_been_requested
+        expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
+        expect(response.authorization_model_id).not_to be_nil
+      end
+    end
+
+    context 'with mode == :client_credentials' do
+      let(:config) {
+        {
+          api_url:,
+          store_id:,
+          authorization_model_id:,
+          credentials: {
+            method: :client_credentials,
+            client_id: 'client_id',
+            client_secret: 'client_secret',
+            api_token_issuer: 'token_issuer',
+            api_audience: 'api_audience',
+          }
+        }
+      }
+
+      let(:subject) { OpenFga::SdkClient.new(config) }
+
+      let!(:token_stub) {
+        stub_request(:post, 'https://token_issuer/oauth/token')
+          .with(body: {
+            'grant_type' => 'client_credentials',
+            'client_id' => 'client_id',
+            'client_secret' => 'client_secret',
+            'audience' => 'api_audience'
+          })
+          .to_return(status: 200,
+                     body: { 'access_token': 'token', 'expires_in': 3600 }.to_json,
+                     headers: { 'Content-Type' => 'application/json' })
+      }
+
+      describe 'an api call with oauth2 access token' do
+        let(:valid_body) { load_json('write_authorization_model_body') }
+
+        it 'can call an API endpoint and pass the Authorization header' do
+          stub = stub_request_with_response(method: :post,
+                                            path: "#{stores_url(store_id)}/authorization-models",
+                                            status: 201,
+                                            request_body: valid_body,
+                                            headers: api_token_authz_header,
+                                            response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
+
+          response = subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                       schema_version: valid_body['schema_version'],
+                                                       conditions: valid_body['conditions'])
+
+          expect(stub).to have_been_requested
+          expect(token_stub).to have_been_requested
+          expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
+          expect(response.authorization_model_id).not_to be_nil
+        end
+      end
+
+      describe 'the auto-refresh behaviour' do
+        let(:expires_in) { 3600 }
+
+        it 'refreshes the token only after expiry has passed - 60 sec' do
+          api_stub = stub_request_with_response(method: :post,
+                                                path: "#{stores_url(store_id)}/check",
+                                                status: 200,
+                                                headers: api_token_authz_header,
+                                                request_body: { tuple_key:
+                                                                  {
+                                                                    user: 'user:anne',
+                                                                    relation: 'reader',
+                                                                    object: 'document:2021-budget'
+                                                                  },
+                                                                authorization_model_id:,
+                                                                consistency: 'UNSPECIFIED',
+                                                },
+                                                response_body: { allowed: true, resolution: 'string' })
+          Timecop.freeze do
+            subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+            subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+            subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+          end
+
+          # Assert 3 check calls but only 1 token call
+          expect(token_stub).to have_been_requested.times(1)
+          expect(api_stub).to have_been_requested.times(3)
+
+          # Uses the existing token right up to expires_at - 61 sec
+          Timecop.travel(Time.now + expires_in - 61) do
+            subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+            expect(token_stub).to have_been_requested.times(1)
+          end
+
+          # Requests a new token after expires_at - 59 sec
+          Timecop.travel(Time.now + expires_in - 59) do
+            subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget')
+            expect(token_stub).to have_been_requested.times(2)
+          end
+        end
+      end
+    end
+
+    context 'with invalid credentials method' do
+      it 'throws a ConfigurationError' do
+        expect { OpenFga::SdkClient.new(api_url:, credentials: { method: :invalid }) }.to raise_error(ConfigurationError)
+      end
     end
   end
 
@@ -139,6 +234,21 @@ describe OpenFga::SdkClient do
         response = subject.write_authorization_model(type_definitions: valid_body['type_definitions'],
                                                      schema_version: valid_body['schema_version'],
                                                      conditions: valid_body['conditions'])
+        expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
+        expect(response.authorization_model_id).not_to be_nil
+      end
+
+      it 'creates an authorization model using an api token' do
+        stub = stub_request_with_response(method: :post,
+                                   path: "#{stores_url(store_id)}/authorization-models",
+                                   status: 201,
+                                   headers: api_token_authz_header,
+                                   request_body: valid_body.slice('type_definitions', 'schema_version'),
+                                   response_body: { authorization_model_id: '01G50QVV17PECNVAHX1GG4Y5NC' })
+
+        response = subject_with_api_token.write_authorization_model(type_definitions: valid_body['type_definitions'],
+                                                     schema_version: valid_body['schema_version'])
+        expect(stub).to have_been_requested
         expect(response).to be_a(OpenFga::WriteAuthorizationModelResponse)
         expect(response.authorization_model_id).not_to be_nil
       end
@@ -202,6 +312,19 @@ describe OpenFga::SdkClient do
         expect(result.authorization_model.id).to eq(model_id)
       end
 
+      it 'returns the authorization model successfully using authorization' do
+
+        stub = stub_request_with_response(method: :get,
+                                          path: "#{stores_url(store_id)}/authorization-models/#{model_id}",
+                                          status: 200,
+                                          headers: api_token_authz_header,
+                                          response_body: valid_response)
+
+        result = subject_with_api_token.read_authorization_model(authorization_model_id: model_id)
+        expect(stub).to have_been_requested
+        expect(result).to be_a(OpenFga::ReadAuthorizationModelResponse)
+      end
+
       it 'raises an error if store_id is missing' do
         expect { subject_no_store.read_authorization_model(authorization_model_id: model_id) }.to raise_error(MissingStoreIdError)
       end
@@ -248,34 +371,35 @@ describe OpenFga::SdkClient do
   end
 
   describe 'Assertions' do
-      let(:assertions) do
-        [
-          {
-            tuple_key: {
-              object: 'document:2021-budget',
+    let(:assertions) do
+      [
+        {
+          tuple_key: {
+            object: 'document:2021-budget',
+            relation: 'reader',
+            user: 'user:anne'
+          },
+          expectation: true,
+          contextual_tuples: [
+            {
+              user: 'user:anne',
               relation: 'reader',
-              user: 'user:anne'
-            },
-            expectation: true,
-            contextual_tuples: [
-              {
-                user: 'user:anne',
-                relation: 'reader',
-                object: 'document:2021-budget',
-                condition: {
-                  name: 'condition1',
-                  context: {}
-                }
+              object: 'document:2021-budget',
+              condition: {
+                name: 'condition1',
+                context: {}
               }
-            ],
-            context: {
-              view_count: 100
             }
+          ],
+          context: {
+            view_count: 100
           }
-        ]
-      end
+        }
+      ]
+    end
 
-      context 'when getting assertions' do
+    describe 'read_assertions' do
+      describe 'a successful call' do
         before do
           stub_request_with_response(method: :get,
                                      path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
@@ -312,38 +436,65 @@ describe OpenFga::SdkClient do
         end
       end
 
-      describe 'when writing assertions' do
-        it 'writes assertions successfully' do
-          stub_request_with_response(method: :put,
-                                     path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
-                                     status: 204,
-                                     request_body: { assertions: })
+      describe 'a successful call with authorization' do
+        it 'sends the authorization header' do
+          stub = stub_request_with_response(method: :get,
+                                            path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                            headers: api_token_authz_header,
+                                            status: 200,
+                                            response_body: { authorization_model_id:, assertions: })
 
-          expect { subject.write_assertions(assertions:, store_id:, authorization_model_id:) }.not_to raise_error
-        end
-
-        it 'raises an error if store_id is missing' do
-          expect { subject_no_store.write_assertions(assertions:) }.to raise_error(MissingStoreIdError)
-        end
-
-        it 'raises an error if model_id is missing' do
-          expect { subject_no_model_id.write_assertions(assertions:, store_id:, authorization_model_id: nil) }.to raise_error(MissingAuthorizationModelIdError)
-        end
-
-        it 'raises an error for invalid assertions' do
-          stub_request_with_response(method: :put,
-                                     path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
-                                     status: 400,
-                                     request_body: { assertions: [] },
-                                     response_body: {
-                                       code: 'validation_error',
-                                       message: 'Invalid assertions'
-                                     })
-
-          expect { subject.write_assertions(assertions: [], store_id:, authorization_model_id:) }.to raise_error(OpenFga::ApiError)
+          subject_with_api_token.read_assertions(store_id:, authorization_model_id:)
+          expect(stub).to have_been_requested
         end
       end
+
     end
+
+    describe 'when writing assertions' do
+      it 'writes assertions successfully' do
+        stub = stub_request_with_response(method: :put,
+                                          path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                          status: 204,
+                                          request_body: { assertions: })
+
+        expect { subject.write_assertions(assertions:, store_id:, authorization_model_id:) }.not_to raise_error
+        expect(stub).to have_been_requested
+      end
+
+      it 'writes assertions successfully using an api token' do
+        stub = stub_request_with_response(method: :put,
+                                          path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                          headers: api_token_authz_header,
+                                          status: 204,
+                                          request_body: { assertions: })
+
+        expect { subject_with_api_token.write_assertions(assertions:, opts: { store_id:, authorization_model_id: }) }.not_to raise_error
+        expect(stub).to have_been_requested
+      end
+
+      it 'raises an error if store_id is missing' do
+        expect { subject_no_store.write_assertions(assertions:) }.to raise_error(MissingStoreIdError)
+      end
+
+      it 'raises an error if model_id is missing' do
+        expect { subject_no_model_id.write_assertions(assertions:, store_id:, authorization_model_id: nil) }.to raise_error(MissingAuthorizationModelIdError)
+      end
+
+      it 'raises an error for invalid assertions' do
+        stub_request_with_response(method: :put,
+                                   path: "#{stores_url(store_id)}/assertions/#{authorization_model_id}",
+                                   status: 400,
+                                   request_body: { assertions: [] },
+                                   response_body: {
+                                     code: 'validation_error',
+                                     message: 'Invalid assertions'
+                                   })
+
+        expect { subject.write_assertions(assertions: [], store_id:, authorization_model_id:) }.to raise_error(OpenFga::ApiError)
+      end
+    end
+  end
 
   describe 'Relationship Queries' do
     # unit tests for batch_check
@@ -412,7 +563,7 @@ describe OpenFga::SdkClient do
       end
 
       it 'returns batch check results successfully' do
-        stub_request_with_response(
+        stub = stub_request_with_response(
           method: :post,
           path: "#{stores_url(store_id)}/batch-check",
           status: 200,
@@ -421,9 +572,27 @@ describe OpenFga::SdkClient do
         )
 
         result = subject.batch_check(checks:)
+
+        expect(stub).to have_been_requested
         expect(result).to be_a(OpenFga::BatchCheckResponse)
         expect(result.result['01JA8PM3QM7VBPGB8KMPK8SBD5'].allowed).to be true
         expect(result.result['01JA8PMM6A90NV5ET0F28CYSZQ'].allowed).to be false
+      end
+
+      it 'returns batch check results successfully with auth' do
+        stub = stub_request_with_response(
+          method: :post,
+          path: "#{stores_url(store_id)}/batch-check",
+          status: 200,
+          headers: api_token_authz_header,
+          request_body: { checks:, consistency: 'UNSPECIFIED' },
+          response_body:
+        )
+
+        result = subject_with_api_token.batch_check(checks:)
+
+        expect(stub).to have_been_requested
+        expect(result).to be_a(OpenFga::BatchCheckResponse)
       end
 
       it 'returns batch check results successfully with contextual tuples' do
@@ -448,15 +617,15 @@ describe OpenFga::SdkClient do
       end
 
       it 'raises an error if correlation_id is missing' do
-        expect { subject.batch_check(checks: [ { tuple_key: {}, correlation_id: nil } ]) }.to raise_error(ArgumentError)
+        expect { subject.batch_check(checks: [{ tuple_key: {}, correlation_id: nil }]) }.to raise_error(ArgumentError)
       end
 
       it 'raises an error if tuple_key is missing' do
-        expect { subject.batch_check(checks: [ tuple_key: nil, correlation_id: '01JA8PMM6A90NV5ET0F28CYSZQ' ]) }.to raise_error(ArgumentError)
+        expect { subject.batch_check(checks: [tuple_key: nil, correlation_id: '01JA8PMM6A90NV5ET0F28CYSZQ']) }.to raise_error(ArgumentError)
       end
 
       it 'raises an error if correlation_id has the wrong format' do
-        expect { subject.batch_check(checks: [ tuple_key: {}, correlation_id: '' ]) }.to raise_error(ArgumentError)
+        expect { subject.batch_check(checks: [tuple_key: {}, correlation_id: '']) }.to raise_error(ArgumentError)
       end
 
       it 'raises an error if store_id is missing' do
@@ -794,7 +963,7 @@ describe OpenFga::SdkClient do
 
           # Should not raise error, but should include results from successful batch
           result = subject.batch_check(checks: error_prone_checks,
-            opts: { max_batch_size: 5 }
+                                       opts: { max_batch_size: 5 }
           )
 
           expect(result).to be_a(OpenFga::BatchCheckResponse)
@@ -815,20 +984,20 @@ describe OpenFga::SdkClient do
     # @return [CheckResponse]
     context 'when running a check request' do
       let(:contextual_tuples) do
-          {
-            tuple_keys: [
-              {
-                user: 'user:anne',
-                relation: 'writer',
-                object: 'document:2021-budget',
-                condition: {
-                  name: 'condition1',
-                  context: {}
-                }
+        {
+          tuple_keys: [
+            {
+              user: 'user:anne',
+              relation: 'writer',
+              object: 'document:2021-budget',
+              condition: {
+                name: 'condition1',
+                context: {}
               }
-            ]
-          }
-        end
+            }
+          ]
+        }
+      end
 
       it 'should work for authorized tuple' do
         stub_request_with_response(method: :post,
@@ -870,6 +1039,28 @@ describe OpenFga::SdkClient do
         expect(response.allowed).to be false
       end
 
+      it 'should pass the authorization header' do
+        stub = stub_request_with_response(method: :post,
+                                   path: "#{stores_url(store_id)}/check",
+                                   status: 200,
+                                   headers: api_token_authz_header,
+                                   request_body: { tuple_key:
+                                                     {
+                                                       user: 'user:anne',
+                                                       relation: 'reader',
+                                                       object: 'document:2021-budget'
+                                                     },
+                                                   authorization_model_id:,
+                                                   consistency: 'UNSPECIFIED',
+                                   },
+                                   response_body: { allowed: true, resolution: 'string' })
+
+        response = subject_with_api_token.check({ user: 'user:anne', relation: :reader, object: 'document:2021-budget' })
+        expect(stub).to have_been_requested
+        expect(response).to be_a(OpenFga::CheckResponse)
+        expect(response.allowed).to be true
+      end
+
       it 'should raise an error if store_id is missing' do
         expect { subject_no_store.check(user: 'user:anne', relation: :reader, object: 'roadmap', opts: { authorization_model_id: }) }.to raise_error(MissingStoreIdError)
       end
@@ -891,7 +1082,7 @@ describe OpenFga::SdkClient do
                                    response_body: { allowed: true, resolution: 'string' })
 
         response = subject.check(user: 'user:anne', relation: :reader, object: 'document:2021-budget',
-                                   contextual_tuples:)
+                                 contextual_tuples:)
         expect(response).to be_a(OpenFga::CheckResponse)
         expect(response.allowed).to be true
       end
@@ -964,20 +1155,42 @@ describe OpenFga::SdkClient do
         }
       end
 
+      it 'expands relationships successfully with an api token' do
+        stub = stub_request_with_response(method: :post,
+                                          path: "#{stores_url(store_id)}/expand",
+                                          status: 200,
+                                          headers: api_token_authz_header,
+                                          request_body: {
+                                            tuple_key: {
+                                              relation:,
+                                              object:
+                                            },
+                                            authorization_model_id:,
+                                            consistency: 'UNSPECIFIED'
+                                          },
+                                          response_body: load_json('expand_response'))
+
+        response = subject_with_api_token.expand(relation:, object:, opts: { authorization_model_id: })
+
+        expect(stub).to have_been_requested
+        expect(response).to be_a(OpenFga::ExpandResponse)
+        expect(response.tree.root.name).to eq('document:2021-budget#reader')
+        expect(response.tree.root.union.nodes.size).to eq(2)
+      end
+
       it 'expands relationships successfully' do
         stub = stub_request_with_response(method: :post,
-                                   path: "#{stores_url(store_id)}/expand",
-                                   status: 200,
-                                   request_body: {
-                                     tuple_key: {
-                                       relation:,
-                                       object:
-                                     },
-                                     authorization_model_id:,
-                                     consistency: 'UNSPECIFIED'
-                                   },
-                                   response_body: load_json('expand_response'))
-
+                                          path: "#{stores_url(store_id)}/expand",
+                                          status: 200,
+                                          request_body: {
+                                            tuple_key: {
+                                              relation:,
+                                              object:
+                                            },
+                                            authorization_model_id:,
+                                            consistency: 'UNSPECIFIED'
+                                          },
+                                          response_body: load_json('expand_response'))
 
         response = subject.expand(relation:, object:, opts: { authorization_model_id: })
 
@@ -1001,18 +1214,18 @@ describe OpenFga::SdkClient do
 
       it 'expands relationships with contextual tuples' do
         stub = stub_request_with_response(method: :post,
-                                   path: "#{stores_url(store_id)}/expand",
-                                   status: 200,
-                                   request_body: {
-                                     tuple_key: {
-                                       relation: 'writer',
-                                       object: 'document:1'
-                                     },
-                                     authorization_model_id:,
-                                     consistency: 'UNSPECIFIED',
-                                     contextual_tuples:
-                                   },
-                                   response_body: load_json('expand_with_contextual_tuples_response'))
+                                          path: "#{stores_url(store_id)}/expand",
+                                          status: 200,
+                                          request_body: {
+                                            tuple_key: {
+                                              relation: 'writer',
+                                              object: 'document:1'
+                                            },
+                                            authorization_model_id:,
+                                            consistency: 'UNSPECIFIED',
+                                            contextual_tuples:
+                                          },
+                                          response_body: load_json('expand_with_contextual_tuples_response'))
 
         response = subject.expand(relation: :writer, object: 'document:1', contextual_tuples:,
                                   opts: { authorization_model_id: })
@@ -1087,6 +1300,32 @@ describe OpenFga::SdkClient do
         expect(response.objects.size).to eq(2)
       end
 
+      it 'list objects successfully with an api token' do
+        stub = stub_request_with_response(method: :post,
+                                          path: "#{stores_url(store_id)}/list-objects",
+                                          status: 200,
+                                          headers: api_token_authz_header,
+                                          request_body: {
+                                            type:,
+                                            relation:,
+                                            user:,
+                                            authorization_model_id:,
+                                            consistency: 'MINIMIZE_LATENCY'
+                                          },
+                                          response_body: {
+                                            objects: %w[document:2021-budget document:2022-budget]
+                                          })
+
+        response = subject_with_api_token.list_objects(user:, relation:, type:, opts: {
+          authorization_model_id:, consistency: 'MINIMIZE_LATENCY'
+        })
+
+        expect(stub).to have_been_requested
+        expect(response).to be_a(OpenFga::ListObjectsResponse)
+        expect(response.objects).to include('document:2021-budget')
+        expect(response.objects.size).to eq(2)
+      end
+
       it 'raises an error if store_id is missing' do
         expect { subject_no_store.list_objects(user:, relation:, type:) }.to raise_error(MissingStoreIdError)
       end
@@ -1121,8 +1360,8 @@ describe OpenFga::SdkClient do
 
         response = subject.list_objects(user:, relation:, type:, contextual_tuples:,
                                         opts: { authorization_model_id:,
-                                          consistency: 'MINIMIZE_LATENCY'
-                                  })
+                                                consistency: 'MINIMIZE_LATENCY'
+                                        })
 
         expect(stub).to have_been_requested
         expect(response).to be_a(OpenFga::ListObjectsResponse)
@@ -1148,7 +1387,7 @@ describe OpenFga::SdkClient do
                                           })
 
         response = subject.list_objects(user:, relation:, type:, contextual_tuples:,
-                                          context: { view_count: 100 },
+                                        context: { view_count: 100 },
                                         opts: { authorization_model_id:,
                                                 consistency: 'MINIMIZE_LATENCY'
                                         })
@@ -1184,6 +1423,21 @@ describe OpenFga::SdkClient do
         expect(response.id).to eq(store_id)
       end
 
+      it 'creates a store successfully with auth' do
+        stub = stub_request_with_response(method: :post,
+                                          path: stores_url,
+                                          status: 200,
+                                          headers: api_token_authz_header,
+                                          request_body: { name: 'new_store' },
+                                          response_body: store_attributes)
+
+        response = subject_with_api_token.create_store(name: 'new_store')
+
+        expect(stub).to have_been_requested
+        expect(response).to be_instance_of(OpenFga::CreateStoreResponse)
+        expect(response.id).to eq(store_id)
+      end
+
       it 'raises an error for invalid store creation request' do
         stub_request_with_response(method: :post,
                                    path: stores_url,
@@ -1204,10 +1458,22 @@ describe OpenFga::SdkClient do
     # @return [nil]
     describe 'when deleting a store' do
       it 'should delete store successfully' do
-        stub_request_with_response(method: :delete,
-                                   path: stores_url(store_id),
-                                   status: 204)
+        stub = stub_request_with_response(method: :delete,
+                                          path: stores_url(store_id),
+                                          status: 204)
+
         expect(subject.delete_store).to be_nil
+        expect(stub).to have_been_requested
+      end
+
+      it 'should delete store successfully with auth' do
+        stub = stub_request_with_response(method: :delete,
+                                          headers: api_token_authz_header,
+                                          path: stores_url(store_id),
+                                          status: 204)
+
+        expect(subject_with_api_token.delete_store).to be_nil
+        expect(stub).to have_been_requested
       end
 
       it 'should raise an error id no store_id is set' do
@@ -1235,11 +1501,26 @@ describe OpenFga::SdkClient do
       let(:subject) { OpenFga::SdkClient.new(api_url:, store_id:) }
 
       it 'should get a store successfully' do
-        stub_request_with_response(method: :get,
-                                   path: stores_url(store_id),
-                                   status: 200,
-                                   response_body: store_attributes)
+        stub = stub_request_with_response(method: :get,
+                                          path: stores_url(store_id),
+                                          status: 200,
+                                          response_body: store_attributes)
         response = subject.get_store
+
+        expect(stub).to have_been_requested
+        expect(response).to be_instance_of(OpenFga::GetStoreResponse)
+        expect(response.id).to eq(store_id)
+      end
+
+      it 'should get a store successfully with auth' do
+        stub = stub_request_with_response(method: :get,
+                                          headers: api_token_authz_header,
+                                          path: stores_url(store_id),
+                                          status: 200,
+                                          response_body: store_attributes)
+        response = subject_with_api_token.get_store
+
+        expect(stub).to have_been_requested
         expect(response).to be_instance_of(OpenFga::GetStoreResponse)
         expect(response.id).to eq(store_id)
       end
@@ -1267,12 +1548,29 @@ describe OpenFga::SdkClient do
       let(:store_attributes) { { id: store_id, name: 'new_store', created_at: DateTime.now, updated_at: DateTime.now } }
 
       it 'should list stores successfully' do
-        stub_request_with_response(method: :get,
-                                   path: stores_url,
-                                   status: 200,
-                                   response_body: { stores: [store_attributes],
-                                                    continuation_token: 'eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ' })
+        stub = stub_request_with_response(method: :get,
+                                          path: stores_url,
+                                          status: 200,
+                                          response_body: { stores: [store_attributes],
+                                                           continuation_token: 'eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ' })
         response = subject.list_stores
+
+        expect(stub).to have_been_requested
+        expect(response).to be_instance_of(OpenFga::ListStoresResponse)
+        expect(response.stores[0].id).to eq(store_id)
+      end
+
+      it 'should list stores successfully with auth' do
+        stub = stub_request_with_response(method: :get,
+                                          headers: api_token_authz_header,
+                                          path: stores_url,
+                                          status: 200,
+                                          response_body: { stores: [store_attributes],
+                                                           continuation_token: 'eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ' })
+
+        response = subject_with_api_token.list_stores
+
+        expect(stub).to have_been_requested
         expect(response).to be_instance_of(OpenFga::ListStoresResponse)
         expect(response.stores[0].id).to eq(store_id)
       end
@@ -1292,6 +1590,7 @@ describe OpenFga::SdkClient do
       let(:start_time) { '2014-01-02T15:14:15Z' }
       let(:page_size) { 10 }
       let(:continuation_token) { 'token' }
+
       let(:response_body) { {
         changes: [
           {
@@ -1310,6 +1609,19 @@ describe OpenFga::SdkClient do
         ],
         continuation_token: 'eyJwayI6IkxBVEVTVF9OU0NPTkZJR19hdXRoMHN0b3JlIiwic2siOiIxem1qbXF3MWZLZExTcUoyN01MdTdqTjh0cWgifQ=='
       } }
+
+      describe 'when using credentials' do
+        it 'sends the authorization header' do
+          stub = stub_request_with_response(method: :get,
+                                            path: "#{stores_url(store_id)}/changes?type=#{type}&start_time=#{start_time}",
+                                            headers: api_token_authz_header,
+                                            status: 200,
+                                            response_body:)
+
+          subject_with_api_token.read_changes(type:, start_time:)
+          expect(stub).to have_been_requested
+        end
+      end
 
       describe 'when there are no options' do
         before do
@@ -1365,13 +1677,13 @@ describe OpenFga::SdkClient do
       let(:object_all) { 'document:' }
       let(:object) { 'document:1' }
       let(:request_body) { {
-                                   tuple_key: {
-                                     user:,
-                                     relation:,
-                                     object:
-                                   },
-                                   page_size: 50
-                                 }}
+        tuple_key: {
+          user:,
+          relation:,
+          object:
+        },
+        page_size: 50
+      } }
       let(:response_body) {
         {
           tuples: [
@@ -1389,12 +1701,26 @@ describe OpenFga::SdkClient do
       describe 'when there are no options' do
         it 'should read a single tuple successfully' do
           stub = stub_request_with_response(method: :post,
-                                           path: "#{stores_url(store_id)}/read",
-                                           status: 200,
-                                           request_body:,
-                                           response_body:)
+                                            path: "#{stores_url(store_id)}/read",
+                                            status: 200,
+                                            request_body:,
+                                            response_body:)
 
           response = subject.read(user:, relation:, object:)
+
+          expect(stub).to have_been_requested
+          expect(response).to be_a(OpenFga::ReadResponse)
+        end
+
+        it 'should read successfully with an api token' do
+          stub = stub_request_with_response(method: :post,
+                                            path: "#{stores_url(store_id)}/read",
+                                            headers: api_token_authz_header,
+                                            status: 200,
+                                            request_body:,
+                                            response_body:)
+
+          response = subject_with_api_token.read(user:, relation:, object:)
 
           expect(stub).to have_been_requested
           expect(response).to be_a(OpenFga::ReadResponse)
@@ -1481,10 +1807,10 @@ describe OpenFga::SdkClient do
     describe 'the write endpoint' do
       describe 'when writing tuples' do
         let(:writes) { { tuple_keys: [{
-            user: 'user:1',
-            relation: 'member',
-            object: 'group:1'
-          }]
+                                        user: 'user:1',
+                                        relation: 'member',
+                                        object: 'group:1'
+                                      }]
         } }
 
         it 'should successfully make the request' do
@@ -1507,6 +1833,30 @@ describe OpenFga::SdkClient do
           )
 
           subject.write(writes:, opts:)
+          expect(stub).to have_been_requested
+        end
+
+        it 'should successfully make the request with an api token' do
+          expected_request = {
+            writes:,
+            authorization_model_id:
+          }
+
+          opts = {
+            authorization_model_id:,
+            store_id:
+          }
+
+          stub = stub_request_with_response(
+            path: "#{stores_url(store_id)}/write",
+            method: :post,
+            headers: api_token_authz_header,
+            status: 200,
+            request_body: expected_request,
+            response_body: {},
+          )
+
+          subject_with_api_token.write(writes:, opts:)
           expect(stub).to have_been_requested
         end
 
@@ -1539,17 +1889,17 @@ describe OpenFga::SdkClient do
 
       describe 'when deleting tuples' do
         let(:deletes) { {
-            tuple_keys: [{
-              user: 'user:1',
-              relation: 'member',
-              object: 'group:1'
-            }]
-        }}
+          tuple_keys: [{
+                         user: 'user:1',
+                         relation: 'member',
+                         object: 'group:1'
+                       }]
+        } }
 
         it 'should successfully make the request' do
           expected_request = {
-              deletes:,
-              authorization_model_id:
+            deletes:,
+            authorization_model_id:
           }
 
           opts = {
@@ -1600,20 +1950,20 @@ describe OpenFga::SdkClient do
         let(:expected_request) { {
           writes: {
             tuple_keys: [{
-              user: 'user:2',
-              relation: 'member',
-              object: 'group:2'
-            }]
+                           user: 'user:2',
+                           relation: 'member',
+                           object: 'group:2'
+                         }]
           },
           deletes: {
             tuple_keys: [{
-              user: 'user:1',
-              relation: 'member',
-              object: 'group:1'
-            }]
+                           user: 'user:1',
+                           relation: 'member',
+                           object: 'group:1'
+                         }]
           },
           authorization_model_id:
-        }}
+        } }
 
         it 'should successfully make the request' do
           opts = {
@@ -1630,19 +1980,19 @@ describe OpenFga::SdkClient do
           )
 
           subject.write(writes: {
-              tuple_keys: [{
-                             user: 'user:2',
-                             relation: 'member',
-                             object: 'group:2'
-                           }]
-            },
-              deletes: {
-                tuple_keys: [{
-                               user: 'user:1',
-                               relation: 'member',
-                               object: 'group:1'
-                             }]
-              }, opts:)
+            tuple_keys: [{
+                           user: 'user:2',
+                           relation: 'member',
+                           object: 'group:2'
+                         }]
+          },
+                        deletes: {
+                          tuple_keys: [{
+                                         user: 'user:1',
+                                         relation: 'member',
+                                         object: 'group:1'
+                                       }]
+                        }, opts:)
 
           expect(stub).to have_been_requested
         end
@@ -1677,8 +2027,44 @@ describe OpenFga::SdkClient do
 
         subject.list_users(
           relation: :member,
-            object: 'group:1',
-            user_filters: [{ type: 'user' }],
+          object: 'group:1',
+          user_filters: [{ type: 'user' }],
+          opts:
+        )
+
+        expect(stub).to have_been_requested
+      end
+
+      it 'should successfully make the request with an api token' do
+        expected_request = {
+          object: 'group:1',
+          relation: :member,
+          user_filters: [{
+                           type: 'user'
+                         }],
+          authorization_model_id:,
+          consistency: 'UNSPECIFIED',
+        }
+
+        opts = {
+          authorization_model_id:,
+        }
+
+        stub = stub_request_with_response(
+          path: "#{stores_url(store_id)}/list-users",
+          method: :post,
+          headers: api_token_authz_header,
+          status: 200,
+          request_body: expected_request,
+          response_body: {
+            users: []
+          },
+        )
+
+        subject_with_api_token.list_users(
+          relation: :member,
+          object: 'group:1',
+          user_filters: [{ type: 'user' }],
           opts:
         )
 
@@ -1724,22 +2110,22 @@ describe OpenFga::SdkClient do
 
         subject.list_users(
           relation: :member,
-            object: 'group:1',
-            user_filters: [{
-                             type: 'user'
-                           }],
-            contextual_tuples: [{
-                                  user: 'user:john',
-                                  relation: 'member',
-                                  object: 'group:2',
-                                  condition: {
-                                    name: 'condition_1',
-                                    context: {}
-                                  }
-                                }],
-            context: {
-              my_key: 'value_1'
-            },
+          object: 'group:1',
+          user_filters: [{
+                           type: 'user'
+                         }],
+          contextual_tuples: [{
+                                user: 'user:john',
+                                relation: 'member',
+                                object: 'group:2',
+                                condition: {
+                                  name: 'condition_1',
+                                  context: {}
+                                }
+                              }],
+          context: {
+            my_key: 'value_1'
+          },
           opts:
         )
 

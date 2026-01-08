@@ -11,6 +11,9 @@ Generator version: 6.4.0
 =end
 
 # Common files
+require 'openfga/helpers'
+require 'openfga/ext/string'
+require 'openfga/ext/nil'
 require 'openfga/api_client'
 require 'openfga/api_error'
 require 'openfga/version'
@@ -19,6 +22,9 @@ require 'openfga/configuration'
 # Client
 require 'openfga/client/client_errors'
 require 'openfga/client/openfga_client'
+
+# Token management
+require 'openfga/token_manager/token_manager'
 
 # Models
 require 'openfga/models/aborted_message_response'
