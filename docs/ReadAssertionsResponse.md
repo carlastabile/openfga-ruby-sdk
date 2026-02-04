@@ -18,3 +18,4 @@ instance = OpenFga::ReadAssertionsResponse.new(
 )
 ```
 
+

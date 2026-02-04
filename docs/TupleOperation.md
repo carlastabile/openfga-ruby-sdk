@@ -13,3 +13,4 @@ require 'openfga'
 instance = OpenFga::TupleOperation.new()
 ```
 
+

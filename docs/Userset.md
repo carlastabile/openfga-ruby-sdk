@@ -26,3 +26,4 @@ instance = OpenFga::Userset.new(
 )
 ```
 
+

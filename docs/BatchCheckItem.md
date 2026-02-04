@@ -22,3 +22,4 @@ instance = OpenFga::BatchCheckItem.new(
 )
 ```
 
+

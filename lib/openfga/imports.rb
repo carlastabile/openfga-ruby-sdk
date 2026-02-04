@@ -14,4 +14,3 @@ require 'openfga/client/openfga_client'
 
 # Token management
 require 'openfga/token_manager/token_manager'
-

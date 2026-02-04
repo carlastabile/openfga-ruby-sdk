@@ -20,3 +20,4 @@ instance = OpenFga::BatchCheckRequest.new(
 )
 ```
 
+

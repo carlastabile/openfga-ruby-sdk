@@ -18,3 +18,4 @@ instance = OpenFga::Difference.new(
 )
 ```
 
+
