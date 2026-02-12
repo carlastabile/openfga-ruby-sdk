@@ -16,7 +16,7 @@ require 'dotenv'
 require 'ulid'
 
 logger = Logger.new($stdout)
-logger.level = Logger::ERROR
+logger.level = Logger::INFO
 
 ENV_FILE = File.expand_path('./.env', __dir__)
 if File.file?(ENV_FILE)
