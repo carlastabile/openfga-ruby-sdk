@@ -95,6 +95,7 @@ lib/openfga/api_client.rb
 lib/openfga/api_error.rb
 lib/openfga/api_model_base.rb
 lib/openfga/configuration.rb
+lib/openfga/constants.rb
 lib/openfga/models/aborted_message_response.rb
 lib/openfga/models/any.rb
 lib/openfga/models/assertion.rb
