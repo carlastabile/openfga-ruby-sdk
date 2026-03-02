@@ -20,3 +20,4 @@ instance = OpenFga::Status.new(
 )
 ```
 
+

@@ -18,3 +18,4 @@ instance = OpenFga::ObjectRelation.new(
 )
 ```
 
+

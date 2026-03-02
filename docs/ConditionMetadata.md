@@ -18,3 +18,4 @@ instance = OpenFga::ConditionMetadata.new(
 )
 ```
 
+

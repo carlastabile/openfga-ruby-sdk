@@ -26,3 +26,4 @@ instance = OpenFga::CheckRequest.new(
 )
 ```
 
+

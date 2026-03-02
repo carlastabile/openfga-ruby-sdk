@@ -28,3 +28,4 @@ instance = OpenFga::ListObjectsRequest.new(
 )
 ```
 
+

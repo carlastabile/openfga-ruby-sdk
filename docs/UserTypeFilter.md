@@ -18,3 +18,4 @@ instance = OpenFga::UserTypeFilter.new(
 )
 ```
 
+

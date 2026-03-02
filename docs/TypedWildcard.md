@@ -16,3 +16,4 @@ instance = OpenFga::TypedWildcard.new(
 )
 ```
 
+

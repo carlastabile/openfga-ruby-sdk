@@ -24,3 +24,4 @@ instance = OpenFga::Store.new(
 )
 ```
 
+
