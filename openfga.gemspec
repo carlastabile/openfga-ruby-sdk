@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.authors     = ['Carla Urrea Stabile, Steven Hobbs']
   s.email       = ['contact@openfga.dev']
-  s.homepage    = 'https://openfga.dev'
+  s.homepage    = 'https://github.com/carlastabile/openfga-ruby-sdk'
   s.summary     = 'This is community-driven Ruby SDK for OpenFGA. It provides a wrapper around the [OpenFGA API definition](https://openfga.dev/api).'
   s.description = 'A high performance and flexible authorization/permission engine built for developers and inspired by Google Zanzibar.'
   s.license     = 'Apache-2.0'
