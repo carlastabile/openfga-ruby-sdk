@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-#    Community-driven Ruby SDK for OpenFGA
+#    Ruby SDK for OpenFGA
 #    API version: 1.x
 #    Website: https://openfga.dev
 #    Documentation: https://openfga.dev/docs

@@ -1,4 +1,4 @@
-# Community-driven Ruby SDK for OpenFGA
+# Ruby SDK for OpenFGA
 
 [![Release](https://img.shields.io/github/v/release/openfga/ruby-sdk?sort=semver&color=green)](https://github.com/openfga/ruby-sdk/releases)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopenfga%2Fruby-sdk.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopenfga%2Fruby-sdk?ref=badge_shield)
