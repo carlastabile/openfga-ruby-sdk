@@ -10,10 +10,10 @@
 
 module OpenFga
   # Version of the OpenFGA Ruby SDK.
-  SDK_VERSION = '0.0.1'
+  SDK_VERSION = OpenFga::VERSION
 
   # User agent used in HTTP requests.
-  USER_AGENT = 'openfga-sdk ruby/0.0.1'
+  USER_AGENT = "openfga-sdk ruby/#{SDK_VERSION}"
 
   # Example API domain for documentation/tests.
   SAMPLE_BASE_DOMAIN = 'fga.example'
