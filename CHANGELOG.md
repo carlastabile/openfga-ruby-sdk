@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.1.2...openfga/v0.1.3) (2026-03-05)
+
+
+### Bug Fixes
+
+* max retries ([2b423ad](https://github.com/carlastabile/openfga-ruby-sdk/commit/2b423ad56cff20d1d7bb747bacaa1bd660a72fa6))
+* max retries ([428e1d1](https://github.com/carlastabile/openfga-ruby-sdk/commit/428e1d1f0bd60d244435c586276eb6efb15f511d))
+
 ## [0.1.2](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.1.1...openfga/v0.1.2) (2026-03-05)
 
 
