@@ -42,6 +42,7 @@ jobs:
         with:
           bundler-cache: true
           bundler: latest
+          rubygems: latest
       - name: Update bundler
         run: gem update bundler
 
