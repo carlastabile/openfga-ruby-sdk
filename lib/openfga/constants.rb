@@ -30,7 +30,7 @@ module OpenFga
   # Retry configuration
 
   # Maximum allowed number of retries for HTTP requests.
-  RETRY_MAX_ALLOWED_NUMBER = 10
+  RETRY_MAX_ALLOWED_NUMBER = 15
 
   # Default maximum number of retries for HTTP requests.
   DEFAULT_MAX_RETRY = 3
