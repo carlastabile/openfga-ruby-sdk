@@ -35,7 +35,7 @@ module OpenFga
     # @option config [Configuration] Configuration for initializing the object, default to Configuration.default
     def initialize(config = Configuration.default)
       @config = config
-      @user_agent = "openfga-sdk ruby/#{OpenFga::SDK_VERSION}"
+      @user_agent = 'openfga-sdk ruby/0.1.4'
       @default_headers = {
         'Content-Type' => 'application/json',
         'User-Agent' => @user_agent
