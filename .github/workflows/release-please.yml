@@ -39,6 +39,9 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+          bundler: latest
+      - name: Update bundler
+        run: gem update bundler
 
       # Release
       - uses: rubygems/release-gem@v1
