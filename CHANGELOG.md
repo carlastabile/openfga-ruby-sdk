@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.1.0...openfga/v0.1.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* read ruby version from constants.rb ([792c3ee](https://github.com/carlastabile/openfga-ruby-sdk/commit/792c3ee825b04f27ec04c1cdb7dd032bf1b32686))
+
 ## [0.1.0](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga-v0.0.1...openfga/v0.1.0) (2026-03-05)
 
 
