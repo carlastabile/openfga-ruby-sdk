@@ -771,6 +771,7 @@ body = {
 response = fga_client.write_assertions(body)
 ```
 
+
 ### Retries
 
 
