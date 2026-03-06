@@ -12,11 +12,11 @@ Generator version: 6.4.0
 =end
 
 # Common files
+require 'openfga/version'
 require 'openfga/constants'
 require 'openfga/api_client'
 require 'openfga/api_error'
 require 'openfga/api_model_base'
-require 'openfga/version'
 require 'openfga/configuration'
 
 require 'openfga/imports'
