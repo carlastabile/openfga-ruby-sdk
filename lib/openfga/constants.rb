@@ -13,7 +13,7 @@ module OpenFga
   SDK_VERSION = OpenFga::VERSION
 
   # User agent used in HTTP requests.
-  USER_AGENT = "openfga-sdk ruby/#{SDK_VERSION}"
+  USER_AGENT = 'openfga-sdk ruby/0.1.4'
 
   # Example API domain for documentation/tests.
   SAMPLE_BASE_DOMAIN = 'fga.example'
@@ -30,7 +30,7 @@ module OpenFga
   # Retry configuration
 
   # Maximum allowed number of retries for HTTP requests.
-  RETRY_MAX_ALLOWED_NUMBER = 10
+  RETRY_MAX_ALLOWED_NUMBER = 15
 
   # Default maximum number of retries for HTTP requests.
   DEFAULT_MAX_RETRY = 3
