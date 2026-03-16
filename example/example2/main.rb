@@ -43,6 +43,7 @@ class OpenFgaClientCredentialsExample
 
     if ENV.fetch('FGA_CLIENT_ID', nil).nil? || ENV.fetch('FGA_CLIENT_SECRET', nil).nil?
       @logger.error 'Exiting client credentials example (no client ID or secret)'
+      @client = nil
       return
     end
 
@@ -69,6 +70,11 @@ class OpenFgaClientCredentialsExample
   end
 
   def run
+    if @client.nil?
+      @logger.error 'OpenFGA client is not initialized. Ensure FGA_CLIENT_ID and FGA_CLIENT_SECRET are set before running the example.'
+      raise 'OpenFGA client is not initialized'
+    end
+
     @logger.info 'Starting OpenFGA Ruby SDK Client Credentials Example'
 
     # Perform a check operation and ensure the API call succeeds
