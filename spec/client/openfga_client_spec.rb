@@ -74,6 +74,46 @@ describe OpenFga::SdkClient do
     expect(OpenFga::SdkClient.new(config)).not_to be_nil
   end
 
+  describe 'Logger configuration' do
+    let(:custom_logger) { Logger.new($stdout) }
+
+    it 'propagates a custom logger to the underlying API client configuration' do
+      client = OpenFga::SdkClient.new(api_url:, logger: custom_logger)
+      api_client_logger = client.instance_variable_get(:@api_client).api_client.config.logger
+      expect(api_client_logger).to eq(custom_logger)
+    end
+
+    it 'uses a default stdout logger when no logger is provided' do
+      client = OpenFga::SdkClient.new(api_url:)
+      api_client_logger = client.instance_variable_get(:@api_client).api_client.config.logger
+      expect(api_client_logger).to be_a(Logger)
+    end
+
+    context 'with mode == :client_credentials' do
+      let(:config) {
+        {
+          api_url:,
+          store_id:,
+          authorization_model_id:,
+          credentials: {
+            method: :client_credentials,
+            client_id: 'client_id',
+            client_secret: 'client_secret',
+            api_token_issuer: 'token_issuer',
+            api_audience: 'api_audience'
+          },
+          logger: custom_logger
+        }
+      }
+
+      it 'propagates the custom logger to the token manager' do
+        client = OpenFga::SdkClient.new(config)
+        token_manager = client.instance_variable_get(:@token_manager)
+        expect(token_manager.config.logger).to eq(custom_logger)
+      end
+    end
+  end
+
   describe 'Credentials configuration' do
     describe 'with mode == :api_token' do
       let(:valid_body) { load_json('write_authorization_model_body') }
