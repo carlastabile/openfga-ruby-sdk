@@ -25,7 +25,8 @@ class OpenFgaExample
     # Replace with your OpenFGA server URL
     @client = OpenFga::SdkClient.new(
       api_url: ENV.fetch('FGA_LOCAL_API_URL', 'http://localhost:8080'),
-      store_id: nil # Will be set after creating a store
+      store_id: nil, # Will be set after creating a store
+      logger: @logger
     )
 
     @store_id = nil

@@ -15,33 +15,35 @@ end
 require 'dotenv'
 require 'ulid'
 
+logger = Logger.new($stdout)
+logger.level = Logger::INFO
+
 ENV_FILE = File.expand_path('./.env', __dir__)
 if File.file?(ENV_FILE)
   Dotenv.load(ENV_FILE)
-  warn "[dotenv] Loaded environment from #{ENV_FILE}"
+  logger.info "Loaded environment from #{ENV_FILE}"
 
   # Dump all FGA_* environment variables that are currently set.
   fga_env = ENV.select { |k, _| k.start_with?('FGA_') }
   if fga_env.empty?
-    warn '[env] No FGA_* environment variables are set.'
+    logger.warn 'No FGA_* environment variables are set.'
   else
-    warn '[env] Loaded FGA_* variables:'
-    fga_env.keys.sort.filter { |k| k != 'FGA_CLIENT_SECRET' }.each { |k| warn "[env]   #{k}=#{ENV[k].inspect}" }
+    logger.info 'Loaded FGA_* variables:'
+    fga_env.keys.sort.filter { |k| k != 'FGA_CLIENT_SECRET' }.each { |k| logger.info "  #{k}=#{ENV[k].inspect}" }
   end
 else
-  warn "[dotenv] No .env found at #{ENV_FILE}"
-  exit(1)
+  logger.warn "No .env found at #{ENV_FILE}"
 end
 
 # OpenFGA Ruby SDK Example
 # This example demonstrates how to use the OpenFGA Ruby SDK to interact with an OpenFGA server.
 class OpenFgaClientCredentialsExample
-  def initialize
-    @logger = Logger.new($stdout)
-    @logger.level = Logger::INFO
+  def initialize(logger)
+    @logger = logger
 
     if ENV.fetch('FGA_CLIENT_ID', nil).nil? || ENV.fetch('FGA_CLIENT_SECRET', nil).nil?
-      @logger.info 'Exiting client credentials example (no client ID or secret)'
+      @logger.error 'Exiting client credentials example (no client ID or secret)'
+      @client = nil
       return
     end
 
@@ -58,7 +60,8 @@ class OpenFgaClientCredentialsExample
           client_secret: ENV.fetch('FGA_CLIENT_SECRET'),
           api_token_issuer: ENV.fetch('FGA_API_TOKEN_ISSUER'),
           api_audience: ENV.fetch('FGA_API_AUDIENCE')
-        }
+        },
+        logger: @logger
       )
     rescue StandardError => e
       puts " ❌ #{e.message}"
@@ -67,6 +70,11 @@ class OpenFgaClientCredentialsExample
   end
 
   def run
+    if @client.nil?
+      @logger.error 'OpenFGA client is not initialized. Ensure FGA_CLIENT_ID and FGA_CLIENT_SECRET are set before running the example.'
+      raise 'OpenFGA client is not initialized'
+    end
+
     @logger.info 'Starting OpenFGA Ruby SDK Client Credentials Example'
 
     # Perform a check operation and ensure the API call succeeds
@@ -83,6 +91,6 @@ end
 
 # Run the example if this file is executed directly
 if __FILE__ == $0
-  example = OpenFgaClientCredentialsExample.new
+  example = OpenFgaClientCredentialsExample.new(logger)
   example.run
 end

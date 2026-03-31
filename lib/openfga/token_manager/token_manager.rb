@@ -34,9 +34,9 @@ module OpenFga
     # Oauth2 standard.
     class Oauth2TokenManager
       class Config
-        attr_reader :client_id, :client_secret, :token_issuer, :audience
+        attr_reader :client_id, :client_secret, :token_issuer, :audience, :logger
 
-        def initialize(client_id:, client_secret:, token_issuer:, audience: nil)
+        def initialize(client_id:, client_secret:, token_issuer:, audience: nil, logger: nil)
           raise ConfigurationError, 'missing client_id' if client_id.blank?
           raise ConfigurationError, 'missing client_secret' if client_secret.blank?
           raise ConfigurationError, 'missing token_issuer' if token_issuer.blank?
@@ -45,6 +45,7 @@ module OpenFga
           @client_secret = client_secret
           @token_issuer = token_issuer
           @audience = audience
+          @logger = logger
         end
       end
 
@@ -54,6 +55,7 @@ module OpenFga
         @config = config
         @access_token_expires_at = nil
         @access_token = nil
+        @logger = config.logger || Logger.new($stdout)
       end
 
       def access_token
@@ -61,7 +63,7 @@ module OpenFga
           return @access_token
         end
 
-        puts "Refreshing access token from #{@config.token_issuer}"
+        @logger.info "Refreshing access token from #{@config.token_issuer}"
 
         form_data = {
           'grant_type' => 'client_credentials',
@@ -76,7 +78,7 @@ module OpenFga
         uri = URI.parse("https://#{@config.token_issuer}/oauth/token")
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(form_data)
-
+  
         req_options = {
           use_ssl: uri.scheme == 'https'
         }
@@ -84,13 +86,14 @@ module OpenFga
         response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
           http.request(request)
         end
-
+          
         if response.code.to_i == 200
           body = JSON.parse(response.body)
           @access_token = body['access_token']
           @access_token_expires_at = Time.now.utc + body['expires_in'].to_i
 
-          puts "Obtained new access token, expires at #{@access_token_expires_at}"
+          @logger.info "Obtained new access token, expires at #{@access_token_expires_at}"
+
           @access_token
         else raise TokenRefreshError.new("Failed to obtain access token: #{response.code} #{response.body}")
         end

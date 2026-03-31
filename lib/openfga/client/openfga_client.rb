@@ -17,6 +17,8 @@ module OpenFga
         method: :none
       }
 
+      @logger = config[:logger] || Logger.new($stdout)
+
       # Later we can support custom token managers.
       @token_manager = case @config[:credentials][:method]
                        when :none
@@ -28,7 +30,8 @@ module OpenFga
                            client_id: @config.dig(:credentials, :client_id),
                            client_secret: @config.dig(:credentials, :client_secret),
                            token_issuer: @config.dig(:credentials, :api_token_issuer),
-                           audience: @config.dig(:credentials, :api_audience)
+                           audience: @config.dig(:credentials, :api_audience),
+                           logger: @logger
                          )
 
                          TokenManager::Oauth2TokenManager.new(oauth_config)
@@ -43,6 +46,7 @@ module OpenFga
         c.server_index = nil
         c.host = @config[:api_url]
         c.scheme = URI(@config[:api_url]).scheme
+        c.logger = @logger
       end
 
       @api_client = OpenFga::OpenFgaApi.new(ApiClient.new(api_client_config))
