@@ -1,6 +1,6 @@
 # Ruby SDK for OpenFGA
 
-[![Release](https://img.shields.io/github/v/release/openfga/ruby-sdk?sort=semver&color=green)](https://github.com/openfga/ruby-sdk/releases)
+[![Release](https://img.shields.io/github/v/release/carlastabile/openfga-ruby-sdk?sort=semver&color=green)](https://github.com/carlastabile/openfga-ruby-sdk/releases)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopenfga%2Fruby-sdk.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopenfga%2Fruby-sdk?ref=badge_shield)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/openfga/ruby-sdk/badge)](https://securityscorecards.dev/viewer/?uri=github.com/openfga/ruby-sdk)
 [![Join our community](https://img.shields.io/badge/slack-cncf_%23openfga-40abb8.svg?logo=slack)](https://openfga.dev/community)
