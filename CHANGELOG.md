@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.1.5...openfga/v0.2.0) (2026-04-17)
+
+
+### Features
+
+* use Ruby logger for log output ([#21](https://github.com/carlastabile/openfga-ruby-sdk/issues/21)) ([fff948f](https://github.com/carlastabile/openfga-ruby-sdk/commit/fff948fe825d629ba383c727c4273cf9a2fce1d6))
+
+
+### Bug Fixes
+
+* update release badge link in README.md ([#24](https://github.com/carlastabile/openfga-ruby-sdk/issues/24)) ([4aff987](https://github.com/carlastabile/openfga-ruby-sdk/commit/4aff9876e65fe9443dcdae915c03a73f35b015ae))
+
 ## [0.1.5](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.1.4...openfga/v0.1.5) (2026-03-06)
 
 
