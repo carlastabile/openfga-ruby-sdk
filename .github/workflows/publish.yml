@@ -1,0 +1,41 @@
+name: publish
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref, tag, or SHA to publish from
+        required: false
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref, tag, or SHA to publish from (defaults to the selected branch/tag)
+        required: false
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    environment: release
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.ref }}
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          bundler: latest
+          rubygems: latest
+      - name: Update bundler
+        run: gem update bundler
+
+      - uses: rubygems/release-gem@v1

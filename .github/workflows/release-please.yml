@@ -20,31 +20,13 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
-  push:
+  publish:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
-    
-    runs-on: ubuntu-latest
-
-    environment: release
-
     permissions:
       contents: write
       id-token: write
-
-    steps:
-      # Set up
-      - uses: actions/checkout@v5
-        with:
-          persist-credentials: false
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-          bundler: latest
-          rubygems: latest
-      - name: Update bundler
-        run: gem update bundler
-
-      # Release
-      - uses: rubygems/release-gem@v1
+    uses: ./.github/workflows/publish.yml
+    with:
+      ref: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit
