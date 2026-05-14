@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'cgi'
 require 'concurrent'
 require 'set'
 
@@ -464,6 +465,39 @@ module OpenFga
       @api_client.write_authorization_model(store_id(opts), request_body, wrap_options(opts))
     end
 
+    # Executes a raw API request against the FGA server with automatic auth injection.
+    # @param method [String, Symbol] HTTP method (e.g. :get, :post)
+    # @param path [String] URL path template (e.g. '/stores/{store_id}/check')
+    # @param path_params [Hash] Values for {placeholder} substitution
+    # @param query_params [Hash] URL query parameters
+    # @param body [Hash, nil] Request body (JSON-serialized automatically)
+    # @param headers [Hash] Additional request headers
+    # @return [ApiExecutorResponse]
+    def execute_api_request(method:, path:, path_params: {}, query_params: {}, body: nil, headers: {})
+      request = ApiExecutorRequest.new(
+        method:,
+        path:,
+        path_params:,
+        query_params:,
+        body:,
+        headers:
+      )
+      request.validate!
+
+      resolved_path = substitute_path_params(request.path, request.path_params)
+      merged_headers = build_auth_headers.merge(request.headers)
+
+      opts = {
+        header_params: merged_headers,
+        query_params:  request.query_params,
+        body:          request.body,
+        return_type:   'Object'
+      }
+
+      data, status, response_headers = @api_client.api_client.call_api(request.method, resolved_path, opts)
+      ApiExecutorResponse.new(data: data, status: status, headers: response_headers)
+    end
+
     private
 
       # Executes a single batch check (used when no splitting is needed)
@@ -579,6 +613,14 @@ module OpenFga
         {
           'Authorization' => "Bearer #{token}"
         }
+      end
+
+      def substitute_path_params(path, path_params)
+        path.gsub(/\{(\w+)\}/) do
+          key = $1
+          value = path_params[key] || path_params[key.to_sym]
+          value ? CGI.escape(value.to_s) : "{#{key}}"
+        end
       end
   end
 end
