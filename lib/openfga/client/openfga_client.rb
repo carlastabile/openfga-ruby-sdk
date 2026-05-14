@@ -465,6 +465,78 @@ module OpenFga
       @api_client.write_authorization_model(store_id(opts), request_body, wrap_options(opts))
     end
 
+    # Executes a streaming API request, yielding each chunk to the block.
+    #
+    # Designed for OpenFGA endpoints that use chunked transfer encoding. When
+    # the caller sets <tt>Accept: application/x-ndjson</tt> in +headers+, each
+    # newline-delimited JSON object is parsed and yielded as a symbolized Hash.
+    # Otherwise the raw chunk String is yielded and the caller is responsible
+    # for parsing.
+    #
+    # @param method [String, Symbol] HTTP method (e.g. :post)
+    # @param path [String] URL path template (e.g. '/stores/{store_id}/streamed-list-objects')
+    # @param path_params [Hash] Values for {placeholder} substitution
+    # @param query_params [Hash] URL query parameters
+    # @param body [Hash, nil] Request body (JSON-serialized automatically)
+    # @param headers [Hash] Request headers; set Accept: application/x-ndjson to enable NDJSON parsing
+    # @yield [String, Hash] Raw chunk String, or parsed Hash when Accept is application/x-ndjson
+    # @return [ApiExecutorResponse] with data: nil (results were yielded to the block)
+    # @raise [ArgumentError] If no block is given or required fields are missing
+    # @raise [ApiError] On non-2xx responses (block is never called in this case)
+    def execute_streaming_api_request(method:, path:, path_params: {}, query_params: {}, body: nil, headers: {}, &block)
+      raise ArgumentError, 'a block is required' unless block_given?
+
+      merged_headers = build_auth_headers.merge(headers)
+
+      request = ApiExecutorRequest.new(
+        method:,
+        path:,
+        path_params:,
+        query_params:,
+        body:,
+        headers: merged_headers
+      )
+      request.validate!
+
+      ndjson = request.headers.any? { |k, v| k.to_s.casecmp('accept').zero? && v.to_s.include?('application/x-ndjson') }
+
+      resolved_path = substitute_path_params(request.path, request.path_params)
+
+      low_level_client = @api_client.api_client
+      chunks = []
+
+      opts = {
+        header_params: request.headers,
+        query_params:  request.query_params,
+        body:          request.body
+      }
+
+      # Use the existing Faraday connection (inherits SSL, proxy, timeout config).
+      # on_data buffers each chunk as it arrives; we process after status is known.
+      response = low_level_client.send(:connection, opts).public_send(request.method.to_sym.downcase) do |req|
+        low_level_client.send(:build_request, request.method, resolved_path, req, opts)
+        req.options.on_data = proc { |chunk, _| chunks << chunk }
+      end
+
+      unless response.success?
+        raise ApiError.new(code: response.status, response_headers: response.headers, response_body: response.body),
+              response.reason_phrase
+      end
+
+      non_empty_chunks = chunks.reject(&:empty?)
+      all_content = non_empty_chunks.empty? ? response.body.to_s : non_empty_chunks.join
+
+      if ndjson
+        yield_ndjson(all_content, &block)
+      elsif non_empty_chunks.empty?
+        block.call(all_content) unless all_content.empty?
+      else
+        non_empty_chunks.each { |chunk| block.call(chunk) }
+      end
+
+      ApiExecutorResponse.new(data: nil, status: response.status, headers: response.headers)
+    end
+
     # Executes a raw API request against the FGA server with automatic auth injection.
     # @param method [String, Symbol] HTTP method (e.g. :get, :post)
     # @param path [String] URL path template (e.g. '/stores/{store_id}/check')
@@ -613,6 +685,15 @@ module OpenFga
         {
           'Authorization' => "Bearer #{token}"
         }
+      end
+
+      def yield_ndjson(content)
+        buffer = content.dup
+        while (idx = buffer.index("\n"))
+          line = buffer.slice!(0, idx + 1).strip
+          yield JSON.parse(line, symbolize_names: true) unless line.empty?
+        end
+        yield JSON.parse(buffer.strip, symbolize_names: true) unless buffer.strip.empty?
       end
 
       def substitute_path_params(path, path_params)
