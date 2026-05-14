@@ -10,7 +10,7 @@ module OpenFga
       @path_params  = path_params  || {}
       @query_params = query_params || {}
       @body         = body
-      @headers      = headers      || {}
+      @headers      = headers || {}
     end
 
     def self.build
@@ -20,8 +20,8 @@ module OpenFga
     end
 
     def validate!
-      raise ArgumentError, "ApiExecutorRequest#method is required" if @method.nil?
-      raise ArgumentError, "ApiExecutorRequest#path is required"   if @path.nil? || @path.empty?
+      raise ArgumentError, 'ApiExecutorRequest#method is required' if @method.nil?
+      raise ArgumentError, 'ApiExecutorRequest#path is required'   if @path.nil? || @path.empty?
     end
   end
 end

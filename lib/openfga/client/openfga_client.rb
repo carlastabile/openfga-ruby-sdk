@@ -495,7 +495,7 @@ module OpenFga
       }
 
       data, status, response_headers = @api_client.api_client.call_api(request.method, resolved_path, opts)
-      ApiExecutorResponse.new(data: data, status: status, headers: response_headers)
+      ApiExecutorResponse.new(data:, status:, headers: response_headers)
     end
 
     private

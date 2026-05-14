@@ -31,10 +31,10 @@ store_id  = ENV.fetch('FGA_STORE_ID', nil)
 api_token = ENV.fetch('FGA_API_TOKEN', nil)
 
 credentials = if api_token
-                { method: :api_token, api_token: api_token }
-              else
-                { method: :none }
-              end
+  { method: :api_token, api_token: }
+else
+  { method: :none }
+end
 
 client = OpenFga::SdkClient.new(
   api_url:,
@@ -62,7 +62,7 @@ if store_id
   response = client.execute_api_request(
     method:      :get,
     path:        '/stores/{store_id}',
-    path_params: { store_id: store_id }
+    path_params: { store_id: }
   )
   logger.info "Status    : #{response.status}"
   logger.info "Store name: #{response.data[:name]}"
@@ -77,7 +77,7 @@ if store_id
   response = client.execute_api_request(
     method:      :post,
     path:        '/stores/{store_id}/check',
-    path_params: { store_id: store_id },
+    path_params: { store_id: },
     body:        {
       tuple_key: {
         user:     'user:anne',
