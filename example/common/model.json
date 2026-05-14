@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.1",
+  "type_definitions": [
+    {
+      "type": "user",
+      "relations": {},
+      "metadata": null
+    },
+    {
+      "type": "organization",
+      "relations": {
+        "member": {
+          "union": {
+            "child": [
+              { "this": {} },
+              { "computed_userset": { "object": "", "relation": "owner" } }
+            ]
+          }
+        },
+        "owner": { "this": {} },
+        "repo_admin": { "this": {} },
+        "repo_reader": { "this": {} },
+        "repo_writer": { "this": {} }
+      },
+      "metadata": {
+        "relations": {
+          "member": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" }
+            ]
+          },
+          "owner": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" }
+            ]
+          },
+          "repo_admin": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "organization", "relation": "member", "condition": "" }
+            ]
+          },
+          "repo_reader": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "organization", "relation": "member", "condition": "" }
+            ]
+          },
+          "repo_writer": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "organization", "relation": "member", "condition": "" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "team",
+      "relations": {
+        "member": { "this": {} }
+      },
+      "metadata": {
+        "relations": {
+          "member": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "team", "relation": "member", "condition": "" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "repo",
+      "relations": {
+        "owner": { "this": {} },
+        "admin": {
+          "union": {
+            "child": [
+              { "this": {} },
+              {
+                "tuple_to_userset": {
+                  "tupleset": { "object": "", "relation": "owner" },
+                  "computed_userset": { "object": "", "relation": "repo_admin" }
+                }
+              }
+            ]
+          }
+        },
+        "maintainer": {
+          "union": {
+            "child": [
+              { "this": {} },
+              { "computed_userset": { "object": "", "relation": "admin" } }
+            ]
+          }
+        },
+        "writer": {
+          "union": {
+            "child": [
+              { "this": {} },
+              { "computed_userset": { "object": "", "relation": "maintainer" } },
+              {
+                "tuple_to_userset": {
+                  "tupleset": { "object": "", "relation": "owner" },
+                  "computed_userset": { "object": "", "relation": "repo_writer" }
+                }
+              }
+            ]
+          }
+        },
+        "triager": {
+          "union": {
+            "child": [
+              { "this": {} },
+              { "computed_userset": { "object": "", "relation": "writer" } }
+            ]
+          }
+        },
+        "reader": {
+          "union": {
+            "child": [
+              { "this": {} },
+              { "computed_userset": { "object": "", "relation": "triager" } },
+              {
+                "tuple_to_userset": {
+                  "tupleset": { "object": "", "relation": "owner" },
+                  "computed_userset": { "object": "", "relation": "repo_reader" }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "relations": {
+          "owner": {
+            "directly_related_user_types": [
+              { "type": "organization", "condition": "" }
+            ]
+          },
+          "admin": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "team", "relation": "member", "condition": "" }
+            ]
+          },
+          "maintainer": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "team", "relation": "member", "condition": "" }
+            ]
+          },
+          "writer": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "team", "relation": "member", "condition": "" }
+            ]
+          },
+          "triager": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "team", "relation": "member", "condition": "" }
+            ]
+          },
+          "reader": {
+            "directly_related_user_types": [
+              { "type": "user", "condition": "" },
+              { "type": "team", "relation": "member", "condition": "" }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "conditions": {}
+}
