@@ -10,20 +10,24 @@ jobs:
   example-tests:
     runs-on: ubuntu-latest
 
-    services:
-      openfga:
-        image: openfga/openfga:latest
-        ports:
-          - 8080:8080
-        options: >-
-          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 10s
-
     steps:
       - uses: actions/checkout@v4
+
+      - name: Start OpenFGA server
+        run: docker run -d --name openfga -p 8080:8080 openfga/openfga:latest run
+
+      - name: Wait for OpenFGA to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if wget --no-verbose --tries=1 --spider http://localhost:8080/healthz 2>/dev/null; then
+              echo "OpenFGA is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "OpenFGA failed to start"
+          docker logs openfga
+          exit 1
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
