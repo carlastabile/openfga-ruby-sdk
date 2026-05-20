@@ -19,7 +19,7 @@ jobs:
       - name: Wait for OpenFGA to be ready
         run: |
           for i in $(seq 1 30); do
-            if wget --no-verbose --tries=1 --spider http://localhost:8080/healthz 2>/dev/null; then
+            if curl -sf http://localhost:8080/stores > /dev/null 2>&1; then
               echo "OpenFGA is ready"
               exit 0
             fi
