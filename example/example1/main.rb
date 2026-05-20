@@ -34,6 +34,7 @@ class OpenFgaExample
   end
 
   def run
+    raise "Intentional failure to test CI"
     @logger.info 'Starting OpenFGA Ruby SDK Example'
 
     # 0. Test connection first
