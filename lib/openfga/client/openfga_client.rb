@@ -17,7 +17,7 @@ module OpenFga
         method: :none
       }
 
-      @logger = config[:logger] || Logger.new($stdout)
+      @logger = config[:logger] || (defined?(Rails) ? Rails.logger : Logger.new($stdout))
 
       # Later we can support custom token managers.
       @token_manager = case @config[:credentials][:method]
