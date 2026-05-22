@@ -48,7 +48,7 @@ module OpenFga
         c.host = @config[:api_url]
         c.scheme = URI(@config[:api_url]).scheme
         c.logger = @logger
-        c.debugging = true # @config[:debug_logs] || false
+        c.debugging = true if @config[:logger]
       end
 
       @api_client = OpenFga::OpenFgaApi.new(ApiClient.new(api_client_config))

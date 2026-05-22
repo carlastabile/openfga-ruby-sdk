@@ -19,7 +19,7 @@ require 'ulid'
 class OpenFgaExample
   def initialize
     @logger = Logger.new(STDOUT)
-    @logger.level = Logger::DEBUG
+    @logger.level = Logger::INFO
 
     # Initialize the OpenFGA client
     # Replace with your OpenFGA server URL
