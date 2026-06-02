@@ -18,7 +18,7 @@ require 'ulid'
 # This example demonstrates how to use the OpenFGA Ruby SDK to interact with an OpenFGA server.
 class OpenFgaExample
   def initialize
-    @logger = Logger.new($stdout)
+    @logger = Logger.new(STDOUT)
     @logger.level = Logger::INFO
 
     # Initialize the OpenFGA client
@@ -105,7 +105,8 @@ class OpenFgaExample
       # Update client with store_id
       @client = OpenFga::SdkClient.new(
         api_url: ENV.fetch('FGA_API_URL', 'http://localhost:8080'),
-        store_id: @store_id
+        store_id: @store_id,
+        logger: @logger
       )
     end
 

@@ -55,7 +55,7 @@ module OpenFga
         @config = config
         @access_token_expires_at = nil
         @access_token = nil
-        @logger = config.logger || Logger.new($stdout)
+        @logger = config.logger || Logger.new(STDOUT)
       end
 
       def access_token
@@ -63,7 +63,7 @@ module OpenFga
           return @access_token
         end
 
-        @logger.info "Refreshing access token from #{@config.token_issuer}"
+        @logger.debug "Refreshing access token from #{@config.token_issuer}"
 
         form_data = {
           'grant_type' => 'client_credentials',
@@ -92,7 +92,7 @@ module OpenFga
           @access_token = body['access_token']
           @access_token_expires_at = Time.now.utc + body['expires_in'].to_i
 
-          @logger.info "Obtained new access token, expires at #{@access_token_expires_at}"
+          @logger.debug "Obtained new access token, expires at #{@access_token_expires_at}"
 
           @access_token
         else raise TokenRefreshError.new("Failed to obtain access token: #{response.code} #{response.body}")

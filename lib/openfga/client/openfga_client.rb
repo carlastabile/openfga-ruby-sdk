@@ -18,7 +18,8 @@ module OpenFga
         method: :none
       }
 
-      @logger = config[:logger] || Logger.new($stdout)
+      @logger = new_logger(@config)
+      @logger.debug('Using custom logger instance') if @config[:logger]
 
       # Later we can support custom token managers.
       @token_manager = case @config[:credentials][:method]
@@ -48,6 +49,7 @@ module OpenFga
         c.host = @config[:api_url]
         c.scheme = URI(@config[:api_url]).scheme
         c.logger = @logger
+        c.debugging = true if @config[:logger]
       end
 
       @api_client = OpenFga::OpenFgaApi.new(ApiClient.new(api_client_config))
@@ -621,6 +623,13 @@ module OpenFga
           value = path_params[key] || path_params[key.to_sym]
           value ? CGI.escape(value.to_s) : "{#{key}}"
         end
+      end
+
+      def new_logger(config)
+        logger = Logger.new($stdout)
+        logger.level = Logger::INFO
+
+        config[:logger] || (defined?(Rails) ? Rails.logger : logger)
       end
   end
 end

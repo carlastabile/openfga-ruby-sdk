@@ -1,0 +1,41 @@
+name: Example Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  example-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start OpenFGA server
+        run: docker run -d --name openfga -p 8080:8080 openfga/openfga:latest run
+
+      - name: Wait for OpenFGA to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/stores > /dev/null 2>&1; then
+              echo "OpenFGA is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "OpenFGA failed to start"
+          docker logs openfga
+          exit 1
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+
+      - name: Run example1
+        run: make run-example1
+        env:
+          FGA_LOCAL_API_URL: http://localhost:8080
