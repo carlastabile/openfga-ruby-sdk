@@ -2185,4 +2185,79 @@ describe OpenFga::SdkClient do
       end
     end
   end
+
+  describe '#execute_api_request' do
+    it 'raises ArgumentError when method is omitted' do
+      expect { subject.execute_api_request(path: '/stores') }.to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError when path is empty' do
+      expect { subject.execute_api_request(method: :get, path: '') }
+        .to raise_error(ArgumentError, /path is required/)
+    end
+
+    it 'returns an ApiExecutorResponse on success' do
+      stub_request(:get, stores_url)
+        .to_return(status: 200, body: { stores: [] }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      resp = subject.execute_api_request(method: :get, path: '/stores')
+
+      expect(resp).to be_a(OpenFga::ApiExecutorResponse)
+      expect(resp.status).to   eq(200)
+      expect(resp.data).to     eq({ stores: [] })
+      expect(resp.success?).to be(true)
+    end
+
+    it 'substitutes path params into the URL' do
+      stub = stub_request(:get, stores_url(store_id))
+        .to_return(status: 200, body: { id: store_id }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      subject.execute_api_request(
+        method:      :get,
+        path:        '/stores/{store_id}',
+        path_params: { store_id: }
+      )
+
+      expect(stub).to have_been_requested
+    end
+
+    it 'sends the request body as JSON' do
+      stub = stub_request(:post, "#{stores_url(store_id)}/check")
+        .with(body: { tuple_key: { user: 'user:anne', relation: 'reader', object: 'doc:1' } }.to_json)
+        .to_return(status: 200, body: { allowed: true }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      resp = subject.execute_api_request(
+        method:      :post,
+        path:        '/stores/{store_id}/check',
+        path_params: { store_id: },
+        body:        { tuple_key: { user: 'user:anne', relation: 'reader', object: 'doc:1' } }
+      )
+
+      expect(stub).to have_been_requested
+      expect(resp.data[:allowed]).to be(true)
+    end
+
+    it 'injects the Authorization header when credentials are configured' do
+      stub = stub_request(:get, stores_url)
+        .with(headers: api_token_authz_header)
+        .to_return(status: 200, body: { stores: [] }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      subject_with_api_token.execute_api_request(method: :get, path: '/stores')
+
+      expect(stub).to have_been_requested
+    end
+
+    it 'raises ApiError for non-2xx responses' do
+      stub_request(:get, stores_url(store_id))
+        .to_return(status: 404, body: { code: 'store_id_not_found' }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      expect {
+        subject.execute_api_request(
+          method:      :get,
+          path:        '/stores/{store_id}',
+          path_params: { store_id: }
+        )
+      }.to raise_error(OpenFga::ApiError)
+    end
+  end
 end
