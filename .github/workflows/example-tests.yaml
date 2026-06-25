@@ -39,3 +39,8 @@ jobs:
         run: make run-example1
         env:
           FGA_LOCAL_API_URL: http://localhost:8080
+
+      - name: Run api-executor example
+        run: make run-api-executor
+        env:
+          FGA_LOCAL_API_URL: http://localhost:8080
