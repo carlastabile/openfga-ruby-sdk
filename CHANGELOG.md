@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.2.0...openfga/v0.3.0) (2026-06-25)
+
+
+### Features
+
+* add execute_api_request for calling arbitrary API endpoints ([#34](https://github.com/carlastabile/openfga-ruby-sdk/issues/34)) ([c5a6f8f](https://github.com/carlastabile/openfga-ruby-sdk/commit/c5a6f8f2c9d7a3f234cc3903fadc14f16e8b8ce7))
+
+
+### Bug Fixes
+
+* custom logger initialization and usage ([#36](https://github.com/carlastabile/openfga-ruby-sdk/issues/36)) ([50b9d34](https://github.com/carlastabile/openfga-ruby-sdk/commit/50b9d34e8a9cbb0a53a1be65867ddbd437757511))
+
 ## [0.2.0](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.1.5...openfga/v0.2.0) (2026-04-17)
 
 
