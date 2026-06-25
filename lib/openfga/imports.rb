@@ -10,9 +10,11 @@ require 'openfga/configuration'
 
 # Client
 require 'openfga/client/client_errors'
-require 'openfga/client/api_executor_request'
-require 'openfga/client/api_executor_response'
 require 'openfga/client/openfga_client'
+
+# Models
+require 'openfga/models/api_executor_request'
+require 'openfga/models/api_executor_response'
 
 # Token management
 require 'openfga/token_manager/token_manager'
