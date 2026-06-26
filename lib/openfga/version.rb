@@ -12,5 +12,5 @@ Generator version: 6.4.0
 =end
 
 module OpenFga
-  VERSION = '0.3.0'
+  VERSION = '0.3.1'
 end

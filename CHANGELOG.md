@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.3.0...openfga/v0.3.1) (2026-06-26)
+
+
+### Miscellaneous Chores
+
+* empty rake task to fix publishing ([#39](https://github.com/carlastabile/openfga-ruby-sdk/issues/39)) ([f789069](https://github.com/carlastabile/openfga-ruby-sdk/commit/f7890690cef60d4374f9d09276ae42664a65b065))
+
 ## [0.3.0](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.2.0...openfga/v0.3.0) (2026-06-25)
 
 
