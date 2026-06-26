@@ -1,9 +1,8 @@
 require 'bundler/gem_tasks'
 
 # release-please already pushes the tag and commit, so skip bundler's git push
-task 'release:source_control_push' do
-  # no-op
-end
+Rake::Task['release:source_control_push'].clear
+task 'release:source_control_push' do; end
 
 begin
   require 'rspec/core/rake_task'
