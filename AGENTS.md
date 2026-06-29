@@ -13,30 +13,30 @@
 ## Project Structure
 
 ```
-lib/openfga/
-├── openfga.rb              # Main entry point
-├── version.rb              # VERSION constant
-├── constants.rb            # SDK constants (auto-generated)
-├── configuration.rb        # API configuration (auto-generated)
-├── api_client.rb           # Faraday HTTP wrapper (auto-generated)
-├── api_error.rb            # Base error class (auto-generated)
-├── api_model_base.rb       # Base model class (auto-generated)
-├── helpers.rb              # Helper utilities (hand-maintained)
-├── imports.rb              # Module imports (hand-maintained)
-├── ext/                    # Ruby core extensions (hand-maintained)
-│   ├── nil.rb
-│   └── string.rb
-├── api/
-│   └── open_fga_api.rb     # Low-level API wrapper (auto-generated)
-├── client/                 # High-level client (hand-maintained)
-│   ├── openfga_client.rb   # SdkClient — main public interface
-│   ├── client_errors.rb    # Custom exception classes
-│   └── models/
-│       ├── api_executor_request.rb
-│       └── api_executor_response.rb
-├── models/                 # ~93 data model classes (auto-generated)
-└── token_manager/
-    └── token_manager.rb    # Auth token management (hand-maintained)
+lib/
+├── openfga.rb              # Main entry point (auto-generated)
+└── openfga/
+    ├── version.rb              # VERSION constant
+    ├── constants.rb            # SDK constants (auto-generated)
+    ├── configuration.rb        # API configuration (auto-generated)
+    ├── api_client.rb           # Faraday HTTP wrapper (auto-generated)
+    ├── api_error.rb            # Base error class (auto-generated)
+    ├── api_model_base.rb       # Base model class (auto-generated)
+    ├── helpers.rb              # Helper utilities (hand-maintained)
+    ├── imports.rb              # Module imports (hand-maintained)
+    ├── ext/                    # Ruby core extensions (hand-maintained)
+    │   ├── nil.rb
+    │   └── string.rb
+    ├── api/
+    │   └── open_fga_api.rb     # Low-level API wrapper (auto-generated)
+    ├── client/                 # High-level client (hand-maintained)
+    │   ├── openfga_client.rb   # SdkClient — main public interface
+    │   ├── client_errors.rb    # Custom exception classes
+    │   └── models/
+    │       ├── api_executor_request.rb
+    │       └── api_executor_response.rb
+    ├── models/                 # ~93 data model classes (auto-generated)
+    └── token_manager/token_manager.rb    # Auth token management (hand-maintained)
 
 spec/
 ├── spec_helper.rb
