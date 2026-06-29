@@ -83,7 +83,7 @@ This SDK is generated from the [OpenFGA API spec](https://github.com/openfga/sdk
 | `openfga.gemspec` | Gem specification |
 | `docs/` | API documentation |
 
-**Hand-maintained files** (safe to edit, listed in `.openapi-generator-ignore`):
+**Hand-maintained files** (safe to edit; some are excluded from regeneration via `.openapi-generator-ignore`):
 
 | Path | Notes |
 |------|-------|
@@ -158,7 +158,7 @@ make lint
 # equivalent: bundle exec rubocop -A
 ```
 
-The `-A` flag auto-corrects safe offenses. Run without it to see violations only:
+The `-A` flag auto-corrects offenses (including unsafe corrections). Run without it to see violations only:
 
 ```sh
 bundle exec rubocop
@@ -259,7 +259,7 @@ A change is ready when all three pass:
    make stop-openfga
    ```
 
-> **Do not run `example2` automatically.** It requires a `.env` file with OAuth2 client credentials (`CLIENT_ID`, `CLIENT_SECRET`, issuer, audience). Running it without that config will fail.
+> **Do not run `example2` automatically.** It requires a `.env` file with OAuth2 client credentials (`FGA_CLIENT_ID`, `FGA_CLIENT_SECRET`, `FGA_API_TOKEN_ISSUER`, `FGA_API_AUDIENCE`). Running it without that config will fail.
 
 ## RuboCop Rules
 
