@@ -34,6 +34,11 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'marcel'
   s.add_runtime_dependency 'concurrent-ruby'
 
+  # Optional: install opentelemetry-api to enable metrics collection.
+  # Without it, all telemetry calls are no-ops.
+  s.add_development_dependency 'opentelemetry-api'
+  s.add_development_dependency 'opentelemetry-sdk'
+
   s.add_development_dependency 'rspec', '~> 3.6', '>= 3.6.0'
 
   s.files         = `find *`.split("\n").uniq.sort.select { |f| !f.empty? }
