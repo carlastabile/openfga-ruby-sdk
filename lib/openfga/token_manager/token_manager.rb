@@ -51,8 +51,9 @@ module OpenFga
 
       attr_reader :config
 
-      def initialize(config)
+      def initialize(config, metrics: nil)
         @config = config
+        @metrics = metrics
         @access_token_expires_at = nil
         @access_token = nil
         @logger = config.logger || Logger.new(STDOUT)
@@ -93,6 +94,10 @@ module OpenFga
           @access_token_expires_at = Time.now.utc + body['expires_in'].to_i
 
           @logger.debug "Obtained new access token, expires at #{@access_token_expires_at}"
+
+          @metrics&.credentials_request(1, {
+            Telemetry::Attributes::FGA_CLIENT_REQUEST_CLIENT_ID => @config.client_id
+          })
 
           @access_token
         else raise TokenRefreshError.new("Failed to obtain access token: #{response.code} #{response.body}")

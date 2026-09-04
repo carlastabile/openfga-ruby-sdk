@@ -1,4 +1,17 @@
 
+# Telemetry
+require 'openfga/telemetry/attribute'
+require 'openfga/telemetry/counter'
+require 'openfga/telemetry/histogram'
+require 'openfga/telemetry/attributes'
+require 'openfga/telemetry/counters'
+require 'openfga/telemetry/histograms'
+require 'openfga/telemetry/configuration'
+require 'openfga/telemetry/metrics'
+require 'openfga/telemetry/noop_metrics'
+require 'openfga/telemetry/http_duration_tracker'
+require 'openfga/telemetry/telemetry'
+
 # Common files
 require 'openfga/helpers'
 require 'openfga/ext/string'

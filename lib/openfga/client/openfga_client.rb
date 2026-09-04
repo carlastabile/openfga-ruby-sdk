@@ -21,6 +21,9 @@ module OpenFga
       @logger = new_logger(@config)
       @logger.debug('Using custom logger instance') if @config[:logger]
 
+      telemetry_config = resolve_telemetry_config(@config[:telemetry])
+      @telemetry_metrics = Telemetry.get(telemetry_config)
+
       # Later we can support custom token managers.
       @token_manager = case @config[:credentials][:method]
                        when :none
@@ -36,7 +39,7 @@ module OpenFga
                            logger: @logger
                          )
 
-                         TokenManager::Oauth2TokenManager.new(oauth_config)
+                         TokenManager::Oauth2TokenManager.new(oauth_config, metrics: @telemetry_metrics)
                        else
                          valid_methods = CREDENTIALS_METHODS.join(', ')
 
@@ -52,7 +55,14 @@ module OpenFga
         c.debugging = true if @config[:logger]
       end
 
-      @api_client = OpenFga::OpenFgaApi.new(ApiClient.new(api_client_config))
+      inner_api_client = ApiClient.new(api_client_config)
+      effective_telemetry_config = telemetry_config || Telemetry.configuration
+      if effective_telemetry_config.http_request_duration.enabled?
+        inner_api_client.instance_variable_set(:@telemetry_metrics, @telemetry_metrics)
+        inner_api_client.singleton_class.prepend(Telemetry::HttpDurationTracker)
+      end
+
+      @api_client = OpenFga::OpenFgaApi.new(inner_api_client)
     end
 
     # Performs multiple relationship checks in a single batch request.
@@ -103,25 +113,30 @@ module OpenFga
         correlation_ids.add(correlation_id)
       end
 
-      # If we have fewer checks than the batch limit, use simple approach
-      if checks.length <= max_batch_size
-        return execute_single_batch_check(checks, opts)
-      end
+      sid = store_id(opts)
 
-      # Split checks into batches and process concurrently
-      check_batches = checks.each_slice(max_batch_size).to_a
-      all_results = process_batches_concurrently(check_batches, max_parallel_requests, opts)
+      with_request_metrics(
+        method_name: 'BatchCheck',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => authorization_model_id(opts),
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_BATCH_CHECK_SIZE => checks.length.to_s
+        }
+      ) do
+        if checks.length <= max_batch_size
+          execute_single_batch_check_with_info(checks, opts)
+        else
+          check_batches = checks.each_slice(max_batch_size).to_a
+          all_results = process_batches_concurrently(check_batches, max_parallel_requests, opts)
 
-      # Merge all batch results
-      merged_results = {}
-      all_results.each do |batch_response|
-        if batch_response&.result
-          merged_results.merge!(batch_response.result)
+          merged_results = {}
+          all_results.each do |batch_response|
+            merged_results.merge!(batch_response.result) if batch_response&.result
+          end
+
+          [BatchCheckResponse.new(result: merged_results), nil, nil]
         end
       end
-
-      # Return a BatchCheckResponse with merged results
-      BatchCheckResponse.new(result: merged_results)
     end
 
     # Checks whether a specific relationship exists in the store.
@@ -152,7 +167,17 @@ module OpenFga
       request_body.context = opts[:context] unless opts[:context].nil?
       request_body.authorization_model_id = authorization_model_id(opts)
 
-      @api_client.check(store_id(opts), request_body, wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'Check',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => request_body.authorization_model_id,
+          Telemetry::Attributes::FGA_CLIENT_USER => body[:user]
+        }
+      ) do
+        @api_client.check_with_http_info(sid, request_body, wrap_options(opts))
+      end
     end
 
     ## Creates a new OpenFGA store for storing authorization models and relationship tuples.
@@ -164,7 +189,9 @@ module OpenFga
       request_body = OpenFga::CreateStoreRequest.new(body)
       opts = body[:opts] || {}
 
-      @api_client.create_store(request_body, wrap_options(opts))
+      with_request_metrics(method_name: 'CreateStore') do
+        @api_client.create_store_with_http_info(request_body, wrap_options(opts))
+      end
     end
 
     # Delete a store
@@ -173,7 +200,13 @@ module OpenFga
     # @option opts [String] :store_id The ID of the store to delete (required if not set in client config)
     # @return [nil]
     def delete_store(opts = {})
-      @api_client.delete_store(store_id(opts), wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'DeleteStore',
+        extra_attrs: { Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid }
+      ) do
+        @api_client.delete_store_with_http_info(sid, wrap_options(opts))
+      end
     end
 
     # Expands a relationship tuple to retrieve all users and groups that have the specified relation with the given object.
@@ -207,8 +240,16 @@ module OpenFga
         request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
       end
 
-      # Call the API client to perform the expansion
-      @api_client.expand(store_id(opts), request_body, wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'Expand',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => request_body.authorization_model_id
+        }
+      ) do
+        @api_client.expand_with_http_info(sid, request_body, wrap_options(opts))
+      end
     end
 
     # Get a store
@@ -217,16 +258,13 @@ module OpenFga
     # @option opts [String] :store_id The ID of the store to retrieve (required if not set in client config)
     # @return [GetStoreResponse] The response containing the store details
     def get_store(opts = {})
-      @api_client.get_store(store_id(opts), wrap_options(opts))
-    end
-
-    # Get a store
-    # Returns an OpenFGA store by its identifier
-    # @param opts [Hash] Optional parameters for the request
-    # @option opts [String] :store_id The ID of the store to retrieve (required if not set in client config)
-    # @return [GetStoreResponse] The response containing the store details
-    def get_store(opts = {})
-      @api_client.get_store(store_id(opts), wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'GetStore',
+        extra_attrs: { Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid }
+      ) do
+        @api_client.get_store_with_http_info(sid, wrap_options(opts))
+      end
     end
 
     # List objects for a given user and relation.
@@ -270,8 +308,17 @@ module OpenFga
 
       request_body.context = context unless context.nil?
 
-      # Call the API client to perform the list objects request
-      @api_client.list_objects(store_id(opts), request_body, wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'ListObjects',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => request_body.authorization_model_id,
+          Telemetry::Attributes::FGA_CLIENT_USER => user
+        }
+      ) do
+        @api_client.list_objects_with_http_info(sid, request_body, wrap_options(opts))
+      end
     end
 
     # List all stores
@@ -281,7 +328,9 @@ module OpenFga
     # @option opts [String] :continuation_token The continuation token for pagination
     # @return [ListStoresResponse] The response containing the paginated list of stores
     def list_stores(opts = {})
-      @api_client.list_stores(wrap_options(opts))
+      with_request_metrics(method_name: 'ListStores') do
+        @api_client.list_stores_with_http_info(wrap_options(opts))
+      end
     end
 
     # List users that have a specific relation with an object
@@ -324,7 +373,16 @@ module OpenFga
         request_body.contextual_tuples = tuples
       end
 
-      @api_client.list_users(store_id(opts), request_body, wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'ListUsers',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => request_body.authorization_model_id
+        }
+      ) do
+        @api_client.list_users_with_http_info(sid, request_body, wrap_options(opts))
+      end
     end
 
     # Read tuples from the store
@@ -357,7 +415,13 @@ module OpenFga
         request_body.tuple_key = ReadRequestTupleKey.new(tuple_key)
       end
 
-      @api_client.read(store_id(opts), request_body, wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'Read',
+        extra_attrs: { Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid }
+      ) do
+        @api_client.read_with_http_info(sid, request_body, wrap_options(opts))
+      end
     end
 
     # Read assertions
@@ -370,7 +434,18 @@ module OpenFga
     # @return [ReadAssertionsResponse] The response containing the assertions
     def read_assertions(opts = {})
       fail MissingAuthorizationModelIdError unless authorization_model_id(opts)
-      @api_client.read_assertions(store_id(opts), authorization_model_id(opts), wrap_options(opts))
+
+      sid = store_id(opts)
+      model_id = authorization_model_id(opts)
+      with_request_metrics(
+        method_name: 'ReadAssertions',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => model_id
+        }
+      ) do
+        @api_client.read_assertions_with_http_info(sid, model_id, wrap_options(opts))
+      end
     end
 
     # Read an authorization model
@@ -383,7 +458,18 @@ module OpenFga
     # @return [ReadAuthorizationModelResponse] The response containing the authorization model details
     def read_authorization_model(opts = {})
       fail MissingAuthorizationModelIdError unless authorization_model_id(opts)
-      @api_client.read_authorization_model(store_id(opts), authorization_model_id(opts), wrap_options(opts))
+
+      sid = store_id(opts)
+      model_id = authorization_model_id(opts)
+      with_request_metrics(
+        method_name: 'ReadAuthorizationModel',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => model_id
+        }
+      ) do
+        @api_client.read_authorization_model_with_http_info(sid, model_id, wrap_options(opts))
+      end
     end
 
     # Read all authorization models
@@ -393,7 +479,13 @@ module OpenFga
     # @raise [MissingStoreIdError] If the store_id is not provided
     # @return [ReadAuthorizationModelsResponse] The response containing the list of authorization models
     def read_authorization_models(opts = {})
-      @api_client.read_authorization_models(store_id(opts), wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'ReadAuthorizationModels',
+        extra_attrs: { Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid }
+      ) do
+        @api_client.read_authorization_models_with_http_info(sid, wrap_options(opts))
+      end
     end
 
     # Read changes
@@ -406,7 +498,13 @@ module OpenFga
     # @option opts [String] :store_id The store ID to read changes from (required if not set in client config)
     # @return [ReadChangesResponse] The response containing the list of changes
     def read_changes(opts = {})
-      @api_client.read_changes(store_id(opts), wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'ReadChanges',
+        extra_attrs: { Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid }
+      ) do
+        @api_client.read_changes_with_http_info(sid, wrap_options(opts))
+      end
     end
 
     # Write tuples to the store.
@@ -423,7 +521,17 @@ module OpenFga
       request_body = WriteRequest.new(writes: body[:writes], deletes: body[:deletes])
 
       request_body.authorization_model_id = opts[:authorization_model_id] if opts[:authorization_model_id]
-      @api_client.write(store_id(opts), request_body, wrap_options(opts))
+
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'Write',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => request_body.authorization_model_id
+        }
+      ) do
+        @api_client.write_with_http_info(sid, request_body, wrap_options(opts))
+      end
     end
 
     # Writes assertions for a specific store and authorization model.
@@ -438,13 +546,21 @@ module OpenFga
     # @return [nil]
     def write_assertions(body = {})
       opts = body[:opts] || {}
-      store_id = store_id(opts)
+      sid = store_id(opts)
       model_id = authorization_model_id(opts)
       fail MissingAuthorizationModelIdError unless model_id
 
       request_body = WriteAssertionsRequest.new(assertions: body[:assertions])
 
-      @api_client.write_assertions(store_id, model_id, request_body, wrap_options(opts))
+      with_request_metrics(
+        method_name: 'WriteAssertions',
+        extra_attrs: {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => model_id
+        }
+      ) do
+        @api_client.write_assertions_with_http_info(sid, model_id, request_body, wrap_options(opts))
+      end
     end
 
     # Writes an authorization model for a specific store.
@@ -464,7 +580,13 @@ module OpenFga
         conditions: body[:conditions]
       )
 
-      @api_client.write_authorization_model(store_id(opts), request_body, wrap_options(opts))
+      sid = store_id(opts)
+      with_request_metrics(
+        method_name: 'WriteAuthorizationModel',
+        extra_attrs: { Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid }
+      ) do
+        @api_client.write_authorization_model_with_http_info(sid, request_body, wrap_options(opts))
+      end
     end
 
     # Executes a raw API request against the FGA server with automatic auth injection.
@@ -502,11 +624,17 @@ module OpenFga
 
     private
 
-      # Executes a single batch check (used when no splitting is needed)
-      def execute_single_batch_check(checks, opts)
+      # Executes a single batch check and returns [data, status_code, headers]
+      def execute_single_batch_check_with_info(checks, opts)
         check_items = build_check_items(checks)
         request_body = build_batch_request(check_items, opts)
-        @api_client.batch_check(store_id(opts), request_body, wrap_options(opts))
+        @api_client.batch_check_with_http_info(store_id(opts), request_body, wrap_options(opts))
+      end
+
+      # Executes a single batch check and returns just data (used in concurrent batching)
+      def execute_single_batch_check(checks, opts)
+        data, _status_code, _headers = execute_single_batch_check_with_info(checks, opts)
+        data
       end
 
       # Processes multiple batches concurrently using concurrent-ruby thread pool and futures
@@ -598,6 +726,21 @@ module OpenFga
         (opts || {})[:authorization_model_id] || @config[:authorization_model_id]
       end
 
+      # Validates the telemetry configuration passed in the client config.
+      # Accepts a Telemetry::Configuration instance or nil (which falls back to
+      # the global Telemetry.configuration). Any other type is a misconfiguration.
+      # @param telemetry_config [Telemetry::Configuration, nil]
+      # @raise [ConfigurationError] If a value of the wrong type is provided.
+      # @return [Telemetry::Configuration, nil]
+      def resolve_telemetry_config(telemetry_config)
+        return nil if telemetry_config.nil?
+        return telemetry_config if telemetry_config.is_a?(Telemetry::Configuration)
+
+        raise ConfigurationError,
+              'config[:telemetry] must be an OpenFga::Telemetry::Configuration, ' \
+              "got #{telemetry_config.class}. Build one with OpenFga::Telemetry::Configuration.new."
+      end
+
       # Returns the options that are augmented with other options that are consistant across
       # all methods and API calls, such as authorization headers.
       # @param opts [Hash, nil] The options
@@ -630,6 +773,68 @@ module OpenFga
         logger.level = Logger::INFO
 
         config[:logger] || (defined?(Rails) ? Rails.logger : logger)
+      end
+
+      # Times an API call and records request metrics for both successful and
+      # failed responses, then returns the response data. When the API call
+      # raises an ApiError (any non-2xx response), metrics are still recorded
+      # using the error's status code and headers before the error is re-raised,
+      # so failures are observable (e.g. error-rate dashboards).
+      #
+      # @param method_name [String] The FGA method name (e.g. 'Check').
+      # @param extra_attrs [Hash] Additional telemetry attributes for this call.
+      # @yield The API call, expected to return [data, status_code, headers].
+      # @return [Object] The response data returned by the block.
+      def with_request_metrics(method_name:, extra_attrs: {})
+        started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        begin
+          data, status_code, headers = yield
+        rescue ApiError => e
+          record_request_metrics(
+            method_name:,
+            status_code: e.code,
+            headers: e.response_headers,
+            started_at:,
+            extra_attrs:
+          )
+          raise
+        end
+
+        record_request_metrics(method_name:, status_code:, headers:, started_at:, extra_attrs:)
+        data
+      end
+
+      def record_request_metrics(method_name:, status_code:, headers:, started_at:, extra_attrs: {})
+        duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000
+
+        attrs = base_telemetry_attrs(method_name).merge(extra_attrs)
+        attrs[Telemetry::Attributes::HTTP_RESPONSE_STATUS_CODE] = status_code.to_s if status_code
+
+        if headers
+          resp_model_id = headers[Telemetry::RESPONSE_MODEL_ID_HEADER]
+          attrs[Telemetry::Attributes::FGA_CLIENT_RESPONSE_MODEL_ID] = resp_model_id if resp_model_id
+        end
+
+        @telemetry_metrics.request_count(1, attrs)
+        @telemetry_metrics.request_duration(duration_ms, attrs)
+
+        return unless headers
+
+        query_duration_str = headers[QUERY_DURATION_HEADER_NAME]
+        @telemetry_metrics.query_duration(query_duration_str.to_f, attrs) if query_duration_str
+      end
+
+      def base_telemetry_attrs(method_name)
+        attrs = {
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD => method_name,
+          Telemetry::Attributes::USER_AGENT_ORIGINAL => USER_AGENT
+        }
+
+        client_id = @config.dig(:credentials, :client_id)
+        attrs[Telemetry::Attributes::FGA_CLIENT_REQUEST_CLIENT_ID] = client_id if client_id
+
+        attrs
       end
   end
 end

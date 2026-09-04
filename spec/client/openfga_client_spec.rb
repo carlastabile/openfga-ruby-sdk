@@ -2186,6 +2186,140 @@ describe OpenFga::SdkClient do
     end
   end
 
+  describe 'Telemetry' do
+    let(:mock_metrics) { instance_double(OpenFga::Telemetry::Metrics) }
+    let(:check_response_body) { { allowed: true } }
+    let(:fga_query_duration_header) { { 'fga-query-duration-ms' => '7.5', 'Content-Type' => 'application/json' } }
+
+    before do
+      allow(OpenFga::Telemetry).to receive(:get).and_return(mock_metrics)
+      allow(mock_metrics).to receive(:request_count)
+      allow(mock_metrics).to receive(:request_duration)
+      allow(mock_metrics).to receive(:query_duration)
+      allow(mock_metrics).to receive(:http_request_duration)
+    end
+
+    it 'records request_count on each API call' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 200, body: check_response_body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count)
+        .with(1, hash_including(OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD))
+
+      subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+    end
+
+    it 'records request_duration on each API call' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 200, body: check_response_body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_duration).with(a_kind_of(Numeric), anything)
+
+      subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+    end
+
+    it 'records query_duration when fga-query-duration-ms header is present' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 200, body: check_response_body.to_json, headers: fga_query_duration_header)
+
+      expect(mock_metrics).to receive(:query_duration).with(7.5, anything)
+
+      subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+    end
+
+    it 'does not record query_duration when header is absent' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 200, body: check_response_body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).not_to receive(:query_duration)
+
+      subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+    end
+
+    it 'includes fga-client.request.method in attributes' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 200, body: check_response_body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count) do |_value, attrs|
+        method_attr = OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD
+        expect(attrs[method_attr]).to eq('Check')
+      end
+
+      subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+    end
+
+    it 'includes fga-client.request.store_id in attributes' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 200, body: check_response_body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count) do |_value, attrs|
+        store_attr = OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID
+        expect(attrs[store_attr]).to eq(store_id)
+      end
+
+      subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+    end
+
+    it 'includes fga-client.user for check requests' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 200, body: check_response_body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count) do |_value, attrs|
+        user_attr = OpenFga::Telemetry::Attributes::FGA_CLIENT_USER
+        expect(attrs[user_attr]).to eq('user:anne')
+      end
+
+      subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+    end
+
+    it 'records metrics when a request fails and re-raises the error' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 403, body: { code: 'forbidden', message: 'nope' }.to_json,
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count)
+        .with(1, hash_including(OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD))
+      expect(mock_metrics).to receive(:request_duration).with(a_kind_of(Numeric), anything)
+
+      expect {
+        subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+      }.to raise_error(OpenFga::ApiError)
+    end
+
+    it 'records the failing status code as an attribute' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 400, body: { code: 'validation_error' }.to_json,
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count) do |_value, attrs|
+        status_attr = OpenFga::Telemetry::Attributes::HTTP_RESPONSE_STATUS_CODE
+        expect(attrs[status_attr]).to eq('400')
+      end
+
+      expect {
+        subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+      }.to raise_error(OpenFga::ApiError)
+    end
+
+    it 'accepts a custom telemetry configuration' do
+      custom_config = OpenFga::Telemetry::Configuration.new
+      custom_client = OpenFga::SdkClient.new(api_url:, store_id:, telemetry: custom_config)
+      expect(OpenFga::Telemetry).to have_received(:get).with(custom_config)
+      expect(custom_client).not_to be_nil
+    end
+
+    it 'uses global telemetry config when no telemetry option is given' do
+      OpenFga::SdkClient.new(api_url:, store_id:)
+      expect(OpenFga::Telemetry).to have_received(:get).with(nil)
+    end
+
+    it 'raises a ConfigurationError when telemetry is not a Telemetry::Configuration' do
+      expect {
+        OpenFga::SdkClient.new(api_url:, store_id:, telemetry: { enabled: true })
+      }.to raise_error(ConfigurationError, /must be an OpenFga::Telemetry::Configuration/)
+    end
+  end
+
   describe '#execute_api_request' do
     it 'raises ArgumentError when method is omitted' do
       expect { subject.execute_api_request(path: '/stores') }.to raise_error(ArgumentError)
