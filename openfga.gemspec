@@ -34,10 +34,11 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'marcel'
   s.add_runtime_dependency 'concurrent-ruby'
 
-  # Optional: install opentelemetry-api to enable metrics collection.
-  # Without it, all telemetry calls are no-ops.
-  s.add_development_dependency 'opentelemetry-api'
-  s.add_development_dependency 'opentelemetry-sdk'
+  # opentelemetry-api is an optional runtime dependency: install it in your
+  # application to enable metrics collection. Without it, all telemetry calls
+  # are no-ops. It is intentionally NOT declared here so it doesn't become a
+  # forced dependency. For a full OTel + Prometheus setup, see
+  # example/telemetry-prometheus.
 
   s.add_development_dependency 'rspec', '~> 3.6', '>= 3.6.0'
 

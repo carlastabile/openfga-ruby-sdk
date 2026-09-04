@@ -2272,6 +2272,36 @@ describe OpenFga::SdkClient do
       subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
     end
 
+    it 'records metrics when a request fails and re-raises the error' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 403, body: { code: 'forbidden', message: 'nope' }.to_json,
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count).with(1, hash_including(
+        OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD
+      ))
+      expect(mock_metrics).to receive(:request_duration).with(a_kind_of(Numeric), anything)
+
+      expect {
+        subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+      }.to raise_error(OpenFga::ApiError)
+    end
+
+    it 'records the failing status code as an attribute' do
+      stub_request(:post, "#{stores_url(store_id)}/check")
+        .to_return(status: 400, body: { code: 'validation_error' }.to_json,
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect(mock_metrics).to receive(:request_count) do |_value, attrs|
+        status_attr = OpenFga::Telemetry::Attributes::HTTP_RESPONSE_STATUS_CODE
+        expect(attrs[status_attr]).to eq('400')
+      end
+
+      expect {
+        subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
+      }.to raise_error(OpenFga::ApiError)
+    end
+
     it 'accepts a custom telemetry configuration' do
       custom_config = OpenFga::Telemetry::Configuration.new
       custom_client = OpenFga::SdkClient.new(api_url:, store_id:, telemetry: custom_config)

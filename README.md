@@ -844,6 +844,10 @@ OpenFga::Telemetry.configure do |t|
 end
 ```
 
+#### Exporting to Prometheus
+
+Metrics are recorded into your configured meter provider; exporting them is a host-application concern. For a complete, runnable stack that pushes metrics via OTLP to an OpenTelemetry Collector and scrapes them with Prometheus, see [`example/telemetry-prometheus`](example/telemetry-prometheus). Note that Prometheus rewrites metric names (`fga-client.request.count` becomes `fga_client_request_count_total`), so query the mangled names in your dashboards.
+
 ### API Endpoints
 
 Class | Method | HTTP request | Description

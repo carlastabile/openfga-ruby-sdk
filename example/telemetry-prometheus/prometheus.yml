@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "openfga-sdk"
+    static_configs:
+      # The collector's Prometheus exporter endpoint (see docker-compose.yml).
+      - targets: ["otel-collector:9464"]
