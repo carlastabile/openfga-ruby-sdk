@@ -57,12 +57,6 @@ module OpenFga
         attr_key: :http_request_method
       )
 
-      HTTP_REQUEST_RESEND_COUNT = Attribute.new(
-        name: 'http.request.resend_count',
-        description: 'The number of times the request was resent.',
-        attr_key: :http_request_resend_count
-      )
-
       HTTP_RESPONSE_STATUS_CODE = Attribute.new(
         name: 'http.response.status_code',
         description: 'The HTTP response status code.',

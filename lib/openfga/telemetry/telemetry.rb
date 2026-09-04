@@ -35,12 +35,25 @@ module OpenFga
       private
 
         def build_metrics(config)
+          ensure_opentelemetry_loaded
+
           if defined?(OpenTelemetry)
             meter = OpenTelemetry.meter_provider.meter(METER_NAME)
             Metrics.new(meter, config)
           else
             NoopMetrics.new
           end
+        end
+
+        # opentelemetry-api is an optional dependency. Attempt to load it so
+        # metrics work even when the host application hasn't required it first.
+        # When the gem isn't installed, metrics silently fall back to NoopMetrics.
+        def ensure_opentelemetry_loaded
+          return if defined?(OpenTelemetry)
+
+          require 'opentelemetry-api'
+        rescue LoadError
+          nil
         end
     end
   end

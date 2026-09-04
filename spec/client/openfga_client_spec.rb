@@ -2203,9 +2203,8 @@ describe OpenFga::SdkClient do
       stub_request(:post, "#{stores_url(store_id)}/check")
         .to_return(status: 200, body: check_response_body.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      expect(mock_metrics).to receive(:request_count).with(1, hash_including(
-        have_key(OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD)
-      ))
+      expect(mock_metrics).to receive(:request_count)
+        .with(1, hash_including(OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD))
 
       subject.check(user: 'user:anne', relation: 'reader', object: 'doc:1')
     end
@@ -2283,6 +2282,12 @@ describe OpenFga::SdkClient do
     it 'uses global telemetry config when no telemetry option is given' do
       OpenFga::SdkClient.new(api_url:, store_id:)
       expect(OpenFga::Telemetry).to have_received(:get).with(nil)
+    end
+
+    it 'raises a ConfigurationError when telemetry is not a Telemetry::Configuration' do
+      expect {
+        OpenFga::SdkClient.new(api_url:, store_id:, telemetry: { enabled: true })
+      }.to raise_error(ConfigurationError, /must be an OpenFga::Telemetry::Configuration/)
     end
   end
 

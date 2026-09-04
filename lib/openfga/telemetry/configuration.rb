@@ -13,7 +13,6 @@ module OpenFga
         fga_client_user:                     true,
         http_host:                           true,
         http_request_method:                 true,
-        http_request_resend_count:           true,
         http_response_status_code:           true,
         url_scheme:                          true,
         url_full:                            true,

@@ -21,7 +21,7 @@ module OpenFga
       @logger = new_logger(@config)
       @logger.debug('Using custom logger instance') if @config[:logger]
 
-      telemetry_config = @config[:telemetry]
+      telemetry_config = resolve_telemetry_config(@config[:telemetry])
       @telemetry_metrics = Telemetry.get(telemetry_config)
 
       # Later we can support custom token managers.
@@ -56,7 +56,8 @@ module OpenFga
       end
 
       inner_api_client = ApiClient.new(api_client_config)
-      if telemetry_config.nil? ? Telemetry.configuration.http_request_duration.enabled? : telemetry_config.http_request_duration.enabled?
+      effective_telemetry_config = telemetry_config || Telemetry.configuration
+      if effective_telemetry_config.http_request_duration.enabled?
         inner_api_client.instance_variable_set(:@telemetry_metrics, @telemetry_metrics)
         inner_api_client.singleton_class.prepend(Telemetry::HttpDurationTracker)
       end
@@ -819,6 +820,21 @@ module OpenFga
       # @return [String] The authorization model ID.
       def authorization_model_id(opts = nil)
         (opts || {})[:authorization_model_id] || @config[:authorization_model_id]
+      end
+
+      # Validates the telemetry configuration passed in the client config.
+      # Accepts a Telemetry::Configuration instance or nil (which falls back to
+      # the global Telemetry.configuration). Any other type is a misconfiguration.
+      # @param telemetry_config [Telemetry::Configuration, nil]
+      # @raise [ConfigurationError] If a value of the wrong type is provided.
+      # @return [Telemetry::Configuration, nil]
+      def resolve_telemetry_config(telemetry_config)
+        return nil if telemetry_config.nil?
+        return telemetry_config if telemetry_config.is_a?(Telemetry::Configuration)
+
+        raise ConfigurationError,
+              'config[:telemetry] must be an OpenFga::Telemetry::Configuration, ' \
+              "got #{telemetry_config.class}. Build one with OpenFga::Telemetry::Configuration.new."
       end
 
       # Returns the options that are augmented with other options that are consistant across

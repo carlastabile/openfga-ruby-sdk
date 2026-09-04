@@ -44,6 +44,7 @@ This is community-driven Ruby SDK for OpenFGA. It provides a wrapper around the 
       - [Read Assertions](#read-assertions)
       - [Write Assertions](#write-assertions)
   - [Retries](#retries)
+  - [Telemetry](#telemetry)
   - [API Endpoints](#api-endpoints)
   - [Models](#models)
 - [Contributing](#contributing)
@@ -775,6 +776,73 @@ response = fga_client.write_assertions(body)
 ### Retries
 
 
+
+### Telemetry
+
+The SDK can emit [OpenTelemetry](https://opentelemetry.io/) metrics for every request it makes. Telemetry is **optional** and only activates when the `opentelemetry-api` gem is available in your application.
+
+#### Enabling telemetry
+
+Add the OpenTelemetry gems to your application's `Gemfile` and configure a meter provider (for example, exporting to an OTLP collector):
+
+```ruby
+# Gemfile
+gem 'opentelemetry-api'
+gem 'opentelemetry-sdk'
+gem 'opentelemetry-exporter-otlp'
+```
+
+```ruby
+require 'opentelemetry/sdk'
+require 'opentelemetry/exporter/otlp'
+
+OpenTelemetry::SDK.configure do |c|
+  c.service_name = 'my-app'
+end
+```
+
+As long as `OpenTelemetry` is loaded before you create the client, metrics are collected automatically. If the gem isn't installed, all telemetry calls become no-ops and the SDK works exactly as before.
+
+#### Metrics
+
+| Metric | Type | Description |
+| ------ | ---- | ----------- |
+| `fga-client.credentials.request` | Counter | Number of times a new access token was requested using client credentials. |
+| `fga-client.request.count` | Counter | Total number of requests made by the client. |
+| `fga-client.request.duration` | Histogram (ms) | Total time for the complete request/response cycle. |
+| `fga-client.query.duration` | Histogram (ms) | Server-side query duration, as reported by the FGA server. |
+| `fga-client.http.request.duration` | Histogram (ms) | Duration of each individual HTTP request, including retries. Disabled by default. |
+
+#### Configuring what is collected
+
+By default all metrics except `fga-client.http.request.duration` are enabled, and every attribute except `fga-client.request.batch_check_size` is attached. You can customize this by passing an `OpenFga::Telemetry::Configuration` as `config[:telemetry]`:
+
+```ruby
+telemetry = OpenFga::Telemetry::Configuration.new do |t|
+  # Enable the per-HTTP-call duration histogram.
+  t.http_request_duration.enabled = true
+
+  # Attach the batch check size attribute to request metrics.
+  t.request_count.fga_client_request_batch_check_size = true
+
+  # Drop a noisy attribute you don't need.
+  t.request_duration.url_full = false
+end
+
+fga_client = OpenFga::SdkClient.new(
+  api_url: ENV['FGA_API_URL'],
+  store_id: ENV['FGA_STORE_ID'],
+  telemetry: telemetry
+)
+```
+
+Each metric (`credentials_request`, `request_count`, `request_duration`, `query_duration`, `http_request_duration`) exposes an `enabled` flag and a per-attribute toggle. You can also set defaults globally instead of per client:
+
+```ruby
+OpenFga::Telemetry.configure do |t|
+  t.http_request_duration.enabled = true
+end
+```
 
 ### API Endpoints
 
