@@ -118,8 +118,8 @@ module OpenFga
       with_request_metrics(
         method_name: 'BatchCheck',
         extra_attrs: {
-          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID         => sid,
-          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID         => authorization_model_id(opts),
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
+          Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => authorization_model_id(opts),
           Telemetry::Attributes::FGA_CLIENT_REQUEST_BATCH_CHECK_SIZE => checks.length.to_s
         }
       ) do
@@ -173,7 +173,7 @@ module OpenFga
         extra_attrs: {
           Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
           Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => request_body.authorization_model_id,
-          Telemetry::Attributes::FGA_CLIENT_USER             => body[:user]
+          Telemetry::Attributes::FGA_CLIENT_USER => body[:user]
         }
       ) do
         @api_client.check_with_http_info(sid, request_body, wrap_options(opts))
@@ -314,7 +314,7 @@ module OpenFga
         extra_attrs: {
           Telemetry::Attributes::FGA_CLIENT_REQUEST_STORE_ID => sid,
           Telemetry::Attributes::FGA_CLIENT_REQUEST_MODEL_ID => request_body.authorization_model_id,
-          Telemetry::Attributes::FGA_CLIENT_USER             => user
+          Telemetry::Attributes::FGA_CLIENT_USER => user
         }
       ) do
         @api_client.list_objects_with_http_info(sid, request_body, wrap_options(opts))
@@ -828,7 +828,7 @@ module OpenFga
       def base_telemetry_attrs(method_name)
         attrs = {
           Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD => method_name,
-          Telemetry::Attributes::USER_AGENT_ORIGINAL       => USER_AGENT
+          Telemetry::Attributes::USER_AGENT_ORIGINAL => USER_AGENT
         }
 
         client_id = @config.dig(:credentials, :client_id)

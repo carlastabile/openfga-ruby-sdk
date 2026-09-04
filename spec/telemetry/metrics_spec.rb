@@ -33,7 +33,7 @@ describe OpenFga::Telemetry::Metrics do
 
     it 'filters attributes based on metric configuration' do
       attrs = {
-        OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD        => 'Check',
+        OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD => 'Check',
         OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_BATCH_CHECK_SIZE => '10'
       }
 

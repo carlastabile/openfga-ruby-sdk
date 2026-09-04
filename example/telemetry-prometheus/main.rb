@@ -34,7 +34,7 @@ exporter = OpenTelemetry::Exporter::OTLP::Metrics::MetricsExporter.new(
   endpoint: ENV.fetch('OTEL_EXPORTER_OTLP_METRICS_ENDPOINT', 'http://localhost:4318/v1/metrics')
 )
 OpenTelemetry.meter_provider.add_metric_reader(
-  OpenTelemetry::SDK::Metrics::Export::PeriodicMetricReader.new(exporter: exporter)
+  OpenTelemetry::SDK::Metrics::Export::PeriodicMetricReader.new(exporter:)
 )
 
 # 2. (Optional) Trim high-cardinality attributes so Prometheus label cardinality
@@ -52,7 +52,7 @@ logger.level = Logger::INFO
 # 3. Build the client. Telemetry is picked up automatically because
 #    OpenTelemetry is already configured at this point.
 api_url = ENV.fetch('FGA_API_URL', 'http://localhost:8080')
-client = OpenFga::SdkClient.new(api_url: api_url, telemetry: telemetry, logger: logger)
+client = OpenFga::SdkClient.new(api_url:, telemetry:, logger:)
 
 # 4. Create a store + model so we have something to check against.
 store = client.create_store(name: 'telemetry-demo')
@@ -60,7 +60,7 @@ store_id = store.id
 logger.info("Created store #{store_id}")
 
 model = client.write_authorization_model(
-  store_id: store_id,
+  store_id:,
   schema_version: '1.1',
   type_definitions: [
     { type: 'user' },
@@ -71,7 +71,7 @@ model = client.write_authorization_model(
 model_id = model.authorization_model_id
 
 client.write(
-  store_id: store_id,
+  store_id:,
   authorization_model_id: model_id,
   writes: [{ user: 'user:anne', relation: 'reader', object: 'document:roadmap' }]
 )
@@ -80,13 +80,13 @@ client.write(
 #    the error metrics that the error-path fix now records.
 logger.info('Generating traffic (this drives the metrics)...')
 20.times do
-  client.check(store_id: store_id, authorization_model_id: model_id,
+  client.check(store_id:, authorization_model_id: model_id,
                user: 'user:anne', relation: 'reader', object: 'document:roadmap')
 end
 
 begin
   # Invalid object format → the server returns a 4xx, which is now counted.
-  client.check(store_id: store_id, authorization_model_id: model_id,
+  client.check(store_id:, authorization_model_id: model_id,
                user: 'user:anne', relation: 'reader', object: 'not-a-valid-object')
 rescue OpenFga::ApiError => e
   logger.info("Expected failure recorded in metrics: #{e.code}")

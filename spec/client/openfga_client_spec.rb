@@ -2277,9 +2277,8 @@ describe OpenFga::SdkClient do
         .to_return(status: 403, body: { code: 'forbidden', message: 'nope' }.to_json,
                    headers: { 'Content-Type' => 'application/json' })
 
-      expect(mock_metrics).to receive(:request_count).with(1, hash_including(
-        OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD
-      ))
+      expect(mock_metrics).to receive(:request_count)
+        .with(1, hash_including(OpenFga::Telemetry::Attributes::FGA_CLIENT_REQUEST_METHOD))
       expect(mock_metrics).to receive(:request_duration).with(a_kind_of(Numeric), anything)
 
       expect {
