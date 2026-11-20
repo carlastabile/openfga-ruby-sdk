@@ -56,6 +56,8 @@ class OpenFgaExample
     # 4. Authorization Checks
     check_example
     batch_check_example
+    list_objects_example
+    streamed_list_objects_example
 
     # 5. Advanced Queries
     expand_example
@@ -713,6 +715,43 @@ class OpenFgaExample
           @logger.error "    Error: #{result.error.message}"
         end
       end
+    end
+
+    def list_objects_example
+      @logger.info '=== List Objects ==='
+
+      @logger.info 'Sending a List Objects request'
+
+      response = @client.list_objects(
+        user: 'organization:github',
+        relation: 'owner',
+        type: 'repo',
+      )
+
+      @logger.info "List Objects request complete with #{response.objects.length} results"
+
+      response.objects.each do |object|
+        @logger.info "  -> #{object}"
+      end
+    end
+
+    def streamed_list_objects_example
+      @logger.info '=== Streamed List Objects ==='
+
+      @logger.info 'Sending a streamed list objects request'
+
+      count = 0
+
+      @client.streamed_list_objects(
+        user: 'organization:github',
+        relation: 'owner',
+        type: 'repo',
+      ) do |object|
+        count += 1
+        @logger.info "  -> #{object}"
+      end
+
+      @logger.info "Streamed List Objects request complete with #{count} results"
     end
 
     def expand_example
