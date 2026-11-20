@@ -595,6 +595,10 @@ module OpenFga
         return if response.success?
 
         fail ApiError.new(code: response.status, response_headers: response.headers), response.reason_phrase
+      rescue Faraday::TimeoutError
+        fail ApiError.new('Connection timed out')
+      rescue Faraday::ConnectionFailed
+        fail ApiError.new('Connection failed')
       end
 
       # Executes a single batch check (used when no splitting is needed)
