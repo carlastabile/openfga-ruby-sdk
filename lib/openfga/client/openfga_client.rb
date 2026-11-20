@@ -577,11 +577,23 @@ module OpenFga
         resolved_path = substitute_path_params(path, { store_id: store_id(opts) })
         headers = build_auth_headers.merge('Content-Type' => 'application/json')
         buffer = +''
+        error_body = +''
 
         response = @api_client.api_client.connection(header_params: headers).post(resolved_path) do |req|
           req.headers = headers
           req.body = body
-          req.options.on_data = proc do |chunk, _overall_received_bytes|
+          req.options.on_data = proc do |chunk, _overall_received_bytes, env|
+            status = env&.status
+
+            # Faraday knows the response status (via env) before any body bytes arrive, since the
+            # status line and headers precede the body on the wire. Route bytes from a non-2xx
+            # response into error_body instead of the parser, so an error body (JSON or HTML) is
+            # never mistaken for an NDJSON line.
+            if status && !(200..299).cover?(status)
+              error_body << chunk
+              next
+            end
+
             buffer << chunk
             while (newline_index = buffer.index("\n"))
               line = buffer.slice!(0..newline_index).chomp
@@ -590,11 +602,13 @@ module OpenFga
           end
         end
 
-        yield buffer unless buffer.strip.empty?
+        if response.success?
+          yield buffer unless buffer.strip.empty?
+          return
+        end
 
-        return if response.success?
-
-        fail ApiError.new(code: response.status, response_headers: response.headers), response.reason_phrase
+        fail ApiError.new(code: response.status, response_headers: response.headers, response_body: error_body),
+             response.reason_phrase
       rescue Faraday::TimeoutError
         fail ApiError.new('Connection timed out')
       rescue Faraday::ConnectionFailed

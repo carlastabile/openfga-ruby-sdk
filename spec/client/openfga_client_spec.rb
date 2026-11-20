@@ -2327,5 +2327,29 @@ describe OpenFga::SdkClient do
         subject.streamed_list_objects(user:, relation:, type:) { |o| o }
       }.to raise_error(OpenFga::ApiError)
     end
+
+    it 'raises ApiError with the response body for a non-2xx response with a JSON error body' do
+      stub_request(:post, streamed_list_objects_url)
+        .to_return(status: 400,
+                  body: '{"code":"validation_error","message":"invalid user"}',
+                  headers: { 'Content-Type' => 'application/json' })
+
+      objects = []
+
+      expect {
+        subject.streamed_list_objects(user:, relation:, type:) { |object| objects << object }
+      }.to raise_error(OpenFga::ApiError, /invalid user/)
+
+      expect(objects).to be_empty
+    end
+
+    it 'raises ApiError instead of a JSON parse error for a non-2xx response with an HTML error body' do
+      stub_request(:post, streamed_list_objects_url)
+        .to_return(status: 502, body: '<html><body>502 Bad Gateway</body></html>', headers: { 'Content-Type' => 'text/html' })
+
+      expect {
+        subject.streamed_list_objects(user:, relation:, type:) { |o| o }
+      }.to raise_error(OpenFga::ApiError, /Bad Gateway/)
+    end
   end
 end
