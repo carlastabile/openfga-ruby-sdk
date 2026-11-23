@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.3.1...openfga/v0.4.0) (2026-11-23)
+
+
+### Features
+
+* support streamed list objects ([#42](https://github.com/carlastabile/openfga-ruby-sdk/issues/42)) ([ff6d0a5](https://github.com/carlastabile/openfga-ruby-sdk/commit/ff6d0a596439652129739da2ea380de6d46ef7b4))
+
 ## [0.3.1](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.3.0...openfga/v0.3.1) (2026-06-26)
 
 
