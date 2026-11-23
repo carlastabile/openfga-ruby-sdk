@@ -2260,4 +2260,96 @@ describe OpenFga::SdkClient do
       }.to raise_error(OpenFga::ApiError)
     end
   end
+
+  describe '#streamed_list_objects' do
+    let(:user) { 'user:anne' }
+    let(:relation) { 'reader' }
+    let(:type) { 'document' }
+    let(:streamed_list_objects_url) { "#{stores_url(store_id)}/streamed-list-objects" }
+    let(:ndjson_body) do
+      "{\"result\":{\"object\":\"document:2021-budget\"}}\n" \
+      "{\"result\":{\"object\":\"document:2022-budget\"}}\n"
+    end
+
+    it 'raises an error if user is missing' do
+      expect { subject.streamed_list_objects(user: nil, relation:, type:) { |o| o } }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises an error if relation is missing' do
+      expect { subject.streamed_list_objects(user:, relation: nil, type:) { |o| o } }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises an error if type is missing' do
+      expect { subject.streamed_list_objects(user:, relation:, type: nil) { |o| o } }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'yields each object as it streams in, when given a block' do
+      stub = stub_request(:post, streamed_list_objects_url)
+        .with(body: { type:, relation:, user:, authorization_model_id:, consistency: 'UNSPECIFIED' })
+        .to_return(status: 200, body: ndjson_body, headers: { 'Content-Type' => 'application/json' })
+
+      objects = []
+      subject.streamed_list_objects(user:, relation:, type:) { |object| objects << object }
+
+      expect(stub).to have_been_requested
+      expect(objects).to eq(%w[document:2021-budget document:2022-budget])
+    end
+
+    it 'returns a lazy Enumerator when no block is given' do
+      stub_request(:post, streamed_list_objects_url)
+        .to_return(status: 200, body: ndjson_body, headers: { 'Content-Type' => 'application/json' })
+
+      enum = subject.streamed_list_objects(user:, relation:, type:)
+
+      expect(enum).to be_a(Enumerator)
+      expect(enum.to_a).to eq(%w[document:2021-budget document:2022-budget])
+    end
+
+    it 'raises ApiError when a stream line contains an error' do
+      stub_request(:post, streamed_list_objects_url)
+        .to_return(status: 200,
+                  body: "{\"error\":{\"code\":\"internal_error\",\"message\":\"boom\"}}\n",
+                  headers: { 'Content-Type' => 'application/json' })
+
+      expect {
+        subject.streamed_list_objects(user:, relation:, type:) { |o| o }
+      }.to raise_error(OpenFga::ApiError, /boom/)
+    end
+
+    it 'raises ApiError for non-2xx responses' do
+      stub_request(:post, streamed_list_objects_url)
+        .to_return(status: 500, body: '', headers: { 'Content-Type' => 'application/json' })
+
+      expect {
+        subject.streamed_list_objects(user:, relation:, type:) { |o| o }
+      }.to raise_error(OpenFga::ApiError)
+    end
+
+    it 'raises ApiError with the response body for a non-2xx response with a JSON error body' do
+      stub_request(:post, streamed_list_objects_url)
+        .to_return(status: 400,
+                  body: '{"code":"validation_error","message":"invalid user"}',
+                  headers: { 'Content-Type' => 'application/json' })
+
+      objects = []
+
+      expect {
+        subject.streamed_list_objects(user:, relation:, type:) { |object| objects << object }
+      }.to raise_error(OpenFga::ApiError, /invalid user/)
+
+      expect(objects).to be_empty
+    end
+
+    it 'raises ApiError instead of a JSON parse error for a non-2xx response with an HTML error body' do
+      stub_request(:post, streamed_list_objects_url)
+        .to_return(status: 502, body: '<html><body>502 Bad Gateway</body></html>', headers: { 'Content-Type' => 'text/html' })
+
+      expect {
+        subject.streamed_list_objects(user:, relation:, type:) { |o| o }
+      }.to raise_error(OpenFga::ApiError, /Bad Gateway/)
+    end
+  end
 end

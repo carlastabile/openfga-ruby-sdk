@@ -274,6 +274,66 @@ module OpenFga
       @api_client.list_objects(store_id(opts), request_body, wrap_options(opts))
     end
 
+    # Streams objects a user has a given relation with, yielding each object as it arrives
+    # over the wire rather than buffering the full result set in memory.
+    # @param body [Hash] The request body containing:
+    #   - :user [String] The user to query.
+    #   - :relation [String] The relation to query.
+    #   - :type [String] The object type to query.
+    #   - :contextual_tuples [Hash] (optional) Contextual tuples for the query.
+    #   - :context [Hash] (optional) Additional context for the query.
+    #   - :opts [Hash] (optional) Request options:
+    #       - :store_id [String] Store ID (required if not set in client config).
+    #       - :authorization_model_id [String] Authorization model ID.
+    #       - :consistency [String] Consistency level ("UNSPECIFIED", "MINIMIZE_LATENCY", "HIGHER_CONSISTENCY").
+    # @raise [ArgumentError] If :user, :relation, or :type is missing.
+    # @raise [OpenFga::ApiError] If the server returns an error, either for the whole request or mid-stream.
+    # @return [Enumerator] If no block is given, a lazy enumerator yielding each object (String).
+    # @yieldparam object [String] Each object as it streams in, when a block is given.
+    def streamed_list_objects(body = {}, &block)
+      user = body[:user]
+      relation = body[:relation]
+      type = body[:type]
+      contextual_tuples = body[:contextual_tuples]
+      context = body[:context]
+      opts = body[:opts] || {}
+
+      fail ArgumentError, "Missing the required parameter 'user'" if user.nil?
+      fail ArgumentError, "Missing the required parameter 'relation'" if relation.nil?
+      fail ArgumentError, "Missing the required parameter 'type'" if type.nil?
+
+      return enum_for(:streamed_list_objects, body) unless block
+
+      request_body = ListObjectsRequest.new(
+        type:,
+        relation:,
+        user:,
+        authorization_model_id: authorization_model_id(opts),
+        consistency: opts[:consistency] || 'UNSPECIFIED'
+      )
+
+      unless contextual_tuples.nil?
+        tuple_keys = contextual_tuples[:tuple_keys].map { |tuple_key| TupleKey.new(tuple_key) }
+        request_body.contextual_tuples = ContextualTupleKeys.new(tuple_keys:)
+      end
+
+      request_body.context = context unless context.nil?
+
+      execute_streamed_api_request(
+        path: '/stores/{store_id}/streamed-list-objects',
+        body: request_body.to_hash.to_json,
+        opts:
+      ) do |line|
+        parsed = JSON.parse(line, symbolize_names: true)
+
+        if parsed[:error]
+          fail ApiError.new(code: parsed.dig(:error, :code), message: parsed.dig(:error, :message))
+        end
+
+        block.call(parsed.dig(:result, :object))
+      end
+    end
+
     # List all stores
     # Returns a paginated list of OpenFGA stores and a continuation token to get additional stores. The continuation token will be empty if there are no more stores.
     # @param opts [Hash] Optional parameters for the request
@@ -501,6 +561,59 @@ module OpenFga
     end
 
     private
+
+      # Executes a raw POST request against the FGA server, yielding each line of the response
+      # body as it arrives rather than buffering and parsing it as a single JSON document. Used
+      # for NDJSON-streaming endpoints (e.g. streamed-list-objects), whose response Content-Type
+      # is indistinguishable from a normal JSON endpoint's, so the generated
+      # ApiClient#deserialize (which assumes exactly one JSON document per response) can't be
+      # used.
+      # @param path [String] URL path template (e.g. '/stores/{store_id}/streamed-list-objects')
+      # @param body [String] JSON-serialized request body
+      # @param opts [Hash] Request options (:store_id, etc.)
+      # @yieldparam line [String] Each non-empty line of the response body, as it arrives.
+      # @raise [OpenFga::ApiError] If the response status is not successful.
+      def execute_streamed_api_request(path:, body:, opts: {})
+        resolved_path = substitute_path_params(path, { store_id: store_id(opts) })
+        headers = build_auth_headers.merge('Content-Type' => 'application/json')
+        buffer = +''
+        error_body = +''
+
+        response = @api_client.api_client.connection(header_params: headers).post(resolved_path) do |req|
+          req.headers = headers
+          req.body = body
+          req.options.on_data = proc do |chunk, _overall_received_bytes, env|
+            status = env&.status
+
+            # Faraday knows the response status (via env) before any body bytes arrive, since the
+            # status line and headers precede the body on the wire. Route bytes from a non-2xx
+            # response into error_body instead of the parser, so an error body (JSON or HTML) is
+            # never mistaken for an NDJSON line.
+            if status && !(200..299).cover?(status)
+              error_body << chunk
+              next
+            end
+
+            buffer << chunk
+            while (newline_index = buffer.index("\n"))
+              line = buffer.slice!(0..newline_index).chomp
+              yield line unless line.empty?
+            end
+          end
+        end
+
+        if response.success?
+          yield buffer unless buffer.strip.empty?
+          return
+        end
+
+        fail ApiError.new(code: response.status, response_headers: response.headers, response_body: error_body),
+             response.reason_phrase
+      rescue Faraday::TimeoutError
+        fail ApiError.new('Connection timed out')
+      rescue Faraday::ConnectionFailed
+        fail ApiError.new('Connection failed')
+      end
 
       # Executes a single batch check (used when no splitting is needed)
       def execute_single_batch_check(checks, opts)
