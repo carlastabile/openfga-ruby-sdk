@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.1](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.4.0...openfga/v4.0.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* fix Ruby version for publish ([#45](https://github.com/carlastabile/openfga-ruby-sdk/issues/45)) ([f532c14](https://github.com/carlastabile/openfga-ruby-sdk/commit/f532c14699da4ed6fd5dfb742993311efeba23b7))
+
 ## [0.4.0](https://github.com/carlastabile/openfga-ruby-sdk/compare/openfga/v0.3.1...openfga/v0.4.0) (2026-11-23)
 
 
